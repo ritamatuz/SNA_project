@@ -1,0 +1,156 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+MIGRATION DATASET
+
+Reading the data
+```{r}
+migration_data <- read.csv("migration_data.csv")
+head(migration_data)
+```
+
+Keeping only the relevant data
+```{r}
+migration_data_filtered <- subset(migration_data, Year == 2019,  select = -c(ï..CO2, VAR, GEN, Gender, COU, YEA, Flag.Codes, Flags))
+inflow_data <- subset(migration_data_filtered, Variable == "Inflows of foreign population by nationality" , select = -c(Year, Variable))
+outflow_data <- subset(migration_data_filtered, Variable == "Outflows of foreign population by nationality" , select = -c(Year, Variable))
+
+names(inflow_data)[names(inflow_data) == "Country.of.birth.nationality"] <- "From"
+names(inflow_data)[names(inflow_data) == "Country"] <- "To"
+
+head(inflow_data)
+```
+
+Looking into the data
+```{r}
+summary(inflow_data)
+countries_from <- unique(inflow_data$From) 
+countries_to <- unique(inflow_data$To)
+
+print(countries_from)
+print(length(countries_from))
+print(countries_to)
+print(length(countries_to))
+```
+
+```{r}
+print(subset(inflow_data, From == "Hungary" & To == "United Kingdom"))
+print(subset(inflow_data, To == "Hungary" & From == "United Kingdom"))
+```
+
+More filtering
+```{r}
+inflow_data_filtered <- subset(inflow_data, From %in% unique(inflow_data$To))
+
+summary(inflow_data_filtered)
+countries_from <- unique(inflow_data_filtered$From) 
+countries_to <- unique(inflow_data_filtered$To)
+
+print(countries_from)
+print(length(countries_from))
+print(countries_to)
+print(length(countries_to))
+
+```
+BORDERS DATASET
+
+Loading data
+```{r}
+borders_data <- read.csv("borders_data.csv")
+head(borders_data)
+```
+Filtering data
+```{r}
+names(borders_data)[names(borders_data) == "country_name"] <- "Country_1"
+names(borders_data)[names(borders_data) == "country_border_name"] <- "Country_2"
+
+borders_data_filtered <- subset(borders_data, select = c(Country_1, Country_2), 
+                                Country_1 %in% unique(inflow_data$To) & Country_2 %in% unique(inflow_data$To))
+```
+
+Inspect data
+```{r}
+summary(borders_data_filtered)
+countries_from <- unique(borders_data_filtered$Country_1) 
+countries_to <- unique(borders_data_filtered$Country_2)
+
+print(countries_from)
+print(length(countries_from))
+print(countries_to)
+print(length(countries_to))
+```
+
+WORLD FACT SHEET:
+
+Load data
+```{r}
+world_fact_sheet <- read.csv("world_fact_sheet.csv")
+head(world_fact_sheet)
+```
+Filter data
+```{r}
+names(world_fact_sheet)[names(world_fact_sheet) == "Area..sq..mi.."] <- "Area"
+names(world_fact_sheet)[names(world_fact_sheet) == "Pop..Density..per.sq..mi.."] <- "Population_Density"
+names(world_fact_sheet)[names(world_fact_sheet) == "GDP....per.capita."] <- "GDP"
+
+#They seem to have a stupid whitespace after the country name that I don't have the patience to keep trying to remove right now
+#world_fact_sheet$Country <- apply(world_fact_sheet$Country, FUN = lambda x: x.str.strip())
+#world_fact_sheet.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+#unique(world_fact_sheet$Country)
+
+world_fact_sheet_filtered <- subset(world_fact_sheet, select = c(Country, Population, Area, Population_Density, GDP), Country %in% unique(inflow_data$To)) 
+
+head(world_fact_sheet_filtered)
+```
+
+
+LANGUAGES DATA
+
+Load data
+```{r}
+languages_data <- read.csv("official_languages.csv")
+head(languages_data)
+```
+```{r}
+# Todo:
+# - delete []s from country names and language names
+# - filter for the countries we're using
+# - (manually) go through the languages and select where it's unclear
+```
+
+
+CRIME DATA
+```{r}
+crime_data <- read.csv("crime_data.csv")
+head(crime_data)
+```
+Clean data
+```{r}
+names(crime_data)[names(crime_data) == "ï..Country"] <- "Country"
+names(crime_data)[names(crime_data) == "Crime.Index"] <- "Crime_Index"
+names(crime_data)[names(crime_data) == "Safety.Index"] <- "Safety_Index"
+
+crime_data_filtered <- subset(crime_data, Country %in% unique(inflow_data$To)) 
+print(length(unique(crime_data_filtered$Country)))
+```
+FIRST ATTEMPT AT CREATING A NETWORK OBJECT
+```{r}
+# migration_net <- network::network(inflow_data$To, edgelist=)
+# nevermind lol
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
