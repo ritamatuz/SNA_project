@@ -94,16 +94,19 @@ names(world_fact_sheet)[names(world_fact_sheet) == "Area..sq..mi.."] <- "Area"
 names(world_fact_sheet)[names(world_fact_sheet) == "Pop..Density..per.sq..mi.."] <- "Population_Density"
 names(world_fact_sheet)[names(world_fact_sheet) == "GDP....per.capita."] <- "GDP"
 
-#They seem to have a stupid whitespace after the country name that I don't have the patience to keep trying to remove right now
-#world_fact_sheet$Country <- apply(world_fact_sheet$Country, FUN = lambda x: x.str.strip())
-#world_fact_sheet.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-#unique(world_fact_sheet$Country)
+world_fact_sheet$Country <- stringr::str_trim(world_fact_sheet$Country)
+world_fact_sheet$Population_Density <- gsub(",", ".", world_fact_sheet$Population_Density)
+
+
+world_fact_sheet$Population_Density <- as.numeric(gsub(",", ".", world_fact_sheet$Population_Density))
+
+  #lapply(world_fact_sheet$Country, stringr::str_trim
+world_fact_sheet$Population_Density <- lapply(world_fact_sheet$Population_Density, as.numeric(gsub(",", ".", jjjj)))
 
 world_fact_sheet_filtered <- subset(world_fact_sheet, select = c(Country, Population, Area, Population_Density, GDP), Country %in% unique(inflow_data$To)) 
 
 head(world_fact_sheet_filtered)
 ```
-
 
 LANGUAGES DATA
 
@@ -111,12 +114,7 @@ Load data
 ```{r}
 languages_data <- read.csv("official_languages.csv")
 head(languages_data)
-```
-```{r}
-# Todo:
-# - delete []s from country names and language names
-# - filter for the countries we're using
-# - (manually) go through the languages and select where it's unclear
+# I will do this manually since it's too messy
 ```
 
 
@@ -134,10 +132,16 @@ names(crime_data)[names(crime_data) == "Safety.Index"] <- "Safety_Index"
 crime_data_filtered <- subset(crime_data, Country %in% unique(inflow_data$To)) 
 print(length(unique(crime_data_filtered$Country)))
 ```
-FIRST ATTEMPT AT CREATING A NETWORK OBJECT
+
+JOINING THE COVARIATE TABLES
 ```{r}
-# migration_net <- network::network(inflow_data$To, edgelist=)
-# nevermind lol
+print(length(world_fact_sheet_filtered$Country))
+print(length(crime_data_filtered$Country))
+
+covariates <- merge(x=world_fact_sheet_filtered, y=crime_data_filtered, by="Country")
+
+write.csv(covariates, "covariates.csv")
+
 ```
 
 
