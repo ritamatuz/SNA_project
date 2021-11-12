@@ -1,0 +1,48 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r}
+library(GERGM)
+GERGM::gergm()
+
+data("lending_2005")
+data("covariate_data_2005")
+data("net_exports_2005")
+
+?plot_network
+?gergm
+```
+
+
+```{r}
+covariates <- read.table("covariates.csv", sep = ";", row.names = 1, header = TRUE)
+borders <- read.table("borders.csv", sep = ",", row.names = 1, header = TRUE)
+migration <- read.table("migration.csv", sep = ",", row.names = 1, header = TRUE)
+
+# Create borders adjacency matrix
+mat<-matrix(0, 33, 33)
+borders_am <- data.frame(mat, row.names = rownames(covariates))
+colnames(borders_am) <- rownames(covariates)
+for(i in 1:NROW(borders)) borders_am[ borders[i,1], borders[i,2] ] <- 1 
+
+# Create migration adjacency matrix
+mat<-matrix(0, 33, 33)
+migration_am <- data.frame(mat, row.names = rownames(covariates))
+colnames(migration_am) <- rownames(covariates)
+for(i in 1:NROW(migration)) migration_am[ migration[i,1], migration[i,2] ] <- migration[i,3]
+
+# Manually fixing up the data a bit more...
+# Deleting Korea and Slovak Republic because they have NAs
+migration_am <- migration_am[-c(34, 35), -c(34, 35)]
+# Adding a bunch of borders that are missing from the dataset
+# here
+# Probably changing zeroes to like 1 or 0.05 is probably good for the model?
+# here
+
+```
+
+

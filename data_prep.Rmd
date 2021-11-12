@@ -51,7 +51,11 @@ print(countries_from)
 print(length(countries_from))
 print(countries_to)
 print(length(countries_to))
+```
 
+
+```{r}
+write.csv(inflow_data_filtered, "migration.csv")
 ```
 BORDERS DATASET
 
@@ -79,6 +83,9 @@ print(countries_from)
 print(length(countries_from))
 print(countries_to)
 print(length(countries_to))
+```
+```{r}
+write.csv(borders_data_filtered, "borders.csv")
 ```
 
 WORLD FACT SHEET:
@@ -140,7 +147,7 @@ print(length(crime_data_filtered$Country))
 
 covariates <- merge(x=world_fact_sheet_filtered, y=crime_data_filtered, by="Country")
 
-write.csv(covariates, "covariates.csv")
+write.csv(covariates, "covariates_2.csv")
 
 ```
 
