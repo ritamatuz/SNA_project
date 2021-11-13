@@ -4,24 +4,32 @@ output: html_notebook
 ---
 
 
-
+### Example from the vignettes
 ```{r}
 library(GERGM)
-GERGM::gergm()
-
 data("lending_2005")
 data("covariate_data_2005")
 data("net_exports_2005")
 
-?plot_network
-?gergm
+formula <- lending_2005 ~ edges + mutual(alpha = 0.8) + sender("log_GDP") + 
+  receiver("log_GDP") + nodemix("G8", base = "No") + netcov(net_exports_2005) 
+
+test <- GERGM::gergm(formula,
+              covariate_data = covariate_data_2005,
+              number_of_networks_to_simulate = 40000,
+              thin = 1/100,
+              proposal_variance = 0.05,
+              MCMC_burnin = 10000,
+              seed = 456,
+              convergence_tolerance = 0.5)
 ```
 
-
+### Reading the data and formatting it for the gergm package
 ```{r}
-covariates <- read.table("covariates.csv", sep = ";", row.names = 1, header = TRUE)
-borders <- read.table("borders.csv", sep = ",", row.names = 1, header = TRUE)
-migration <- read.table("migration.csv", sep = ",", row.names = 1, header = TRUE)
+
+covariates <- read.table("data_cleaned/covariates.csv", sep = ";", row.names = 1, header = TRUE)
+borders <- read.table("data_cleaned/borders.csv", sep = ",", row.names = 1, header = TRUE)
+migration <- read.table("data_cleaned/migration.csv", sep = ",", row.names = 1, header = TRUE)
 
 # Create borders adjacency matrix
 mat<-matrix(0, 33, 33)
@@ -38,11 +46,153 @@ for(i in 1:NROW(migration)) migration_am[ migration[i,1], migration[i,2] ] <- mi
 # Manually fixing up the data a bit more...
 # Deleting Korea and Slovak Republic because they have NAs
 migration_am <- migration_am[-c(34, 35), -c(34, 35)]
+# Also deleting Chile, Greece, Ireland and Portugal because too many missing values
+migration_am <- migration_am[-c(5, 12, 15, 26), -c(5, 12, 15, 26)]
 # Adding a bunch of borders that are missing from the dataset
-# here
-# Probably changing zeroes to like 1 or 0.05 is probably good for the model?
-# here
+# TODO
+# Changing zeroes to like 1 or 0.05 if it is good for the model?
+# TODO
+
+# Converting the adjacency matrix into matrix type
+migration_mat <- as.matrix(migration_am)
+# Making sure the diagonals stay zero (for when we are raising values)
+diag(migration_mat) <- 0
+
+GERGM::plot_network(migration_mat, white_background = TRUE, show_legend = FALSE)
+```
+
+
+### Scaling the covariates to similar ranges for more readable coefficients
+```{r}
+covariates <- subset(covariates, select = -c(Area, Safety_Index))
+summary(covariates)
+
+# Population is now on the scale of 1 million inhabitants
+covariates$Population <- covariates$Population / 1000000
+# GDP will be a 100th of the GDP...
+covariates$GDP <- covariates$GDP / 100
+# Crime index will get a zero at the end
+covariates$Crime_Index <- covariates$Crime_Index * 10
+
+summary(covariates)
+```
+
+
+### Loading data into a first gergm model
+```{r}
+formula1 <- migration_mat ~ edges + sender("Population")
+
+model1 <- GERGM::gergm(formula1,
+                       covariate_data = covariates,
+                   number_of_networks_to_simulate = 40000,
+                   thin = 1/100,
+                   proposal_variance = 0.05,
+                   MCMC_burnin = 10000,
+                   seed = 456,
+                   convergence_tolerance = 0.5)
 
 ```
 
+
+### Second model with "mutual"
+```{r}
+formula2 <- migration_mat ~ edges + mutual
+
+model2 <- GERGM::gergm(formula2,
+                       covariate_data = covariates,
+                       number_of_networks_to_simulate = 40000,
+                       thin = 1/100,
+                       proposal_variance = 0.05,
+                       MCMC_burnin = 10000,
+                       seed = 456,
+                       convergence_tolerance = 0.5,
+                       maximum_number_of_theta_updates = 10)
+# verbose = FALSE
+# maximum_number_of_theta_updates = 20
+```
+
+
+### Third model with a few cherry-picked different effects
+```{r}
+
+formula3 <- migration_mat ~ 
+                            edges + 
+                            sender("Population") + 
+                            sender("Crime_Index") + 
+                            in2stars(alpha = 1) + 
+                            nodematch("Language")
+
+model3 <- GERGM::gergm(formula3,
+                       covariate_data = covariates,
+                       number_of_networks_to_simulate = 40000,
+                       thin = 1/100,
+                       proposal_variance = 0.05,
+                       MCMC_burnin = 10000,
+                       seed = 456,
+                       convergence_tolerance = 0.5,
+                       maximum_number_of_theta_updates = 10)
+# verbose = FALSE
+# maximum_number_of_theta_updates = 20
+```
+
+
+### Fourth model with all exogenous effects
+```{r}
+
+formula4 <- migration_mat ~ 
+                            edges + 
+                            sender("Population") + 
+                            receiver("Population") +
+                            sender("Population_Density") +
+                            receiver("Population_Density") +
+                            sender("GDP") +
+                            receiver("GDP") +
+                            sender("Crime_Index") +
+                            receiver("Crime_Index") +
+                            nodematch("Language")
+
+model4 <- GERGM::gergm(formula4,
+                       covariate_data = covariates,
+                       number_of_networks_to_simulate = 40000,
+                       thin = 1/100,
+                       proposal_variance = 0.05,
+                       MCMC_burnin = 10000,
+                       seed = 456,
+                       convergence_tolerance = 0.5,
+                       maximum_number_of_theta_updates = 10)
+# verbose = FALSE
+# maximum_number_of_theta_updates = 20
+```
+
+
+### Fifth model with all endogenous and exogenous effects
+```{r}
+
+formula5 <- migration_mat ~ 
+                            edges + 
+                            sender("Population") + 
+                            receiver("Population") +
+                            sender("Population_Density") +
+                            receiver("Population_Density") +
+                            sender("GDP") +
+                            receiver("GDP") +
+                            sender("Crime_Index") +
+                            receiver("Crime_Index") +
+                            nodematch("Language") +
+                            in2stars(alpha = 0.8) +
+                            out2stars(alpha = 0.8) +
+                            mutual(alpha = 0.8)
+
+model5 <- GERGM::gergm(formula5,
+                       covariate_data = covariates,
+                       number_of_networks_to_simulate = 40000,
+                       thin = 1/100,
+                       proposal_variance = 0.05,
+                       MCMC_burnin = 10000,
+                       seed = 456,
+                       convergence_tolerance = 0.5,
+                       maximum_number_of_theta_updates = 10)
+# verbose = FALSE
+# maximum_number_of_theta_updates = 20
+```
 
