@@ -1,0 +1,90 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+### Importing data
+```{r}
+covariates <- read.table("data_final/covariates.csv", row.names = 1, sep = ";", header = TRUE)
+borders <- as.matrix(read.table("data_final/borders_adjacency_matrix.csv", sep = ";", row.names = 1, header = TRUE))
+migration <- as.matrix(read.table("data_final/migration_adjacency_matrix.csv", sep = ";", row.names = 1, header = TRUE))
+```
+
+### Plotting data
+```{r}
+GERGM::plot_network(migration, white_background = TRUE, show_legend = FALSE)
+GERGM::plot_network(borders, white_background = TRUE, show_legend = FALSE)
+```
+
+### Scaling the data
+```{r}
+summary(covariates)
+#covariates <- subset(covariates, select = -c(Area, Safety_Index))
+
+# You could do something like this to put covariates on a different scale like million inhabitants
+# covariates$Population <- covariates$Population / 1000000
+# Or this to try log scales like Claudia suggested
+# covariates$Population <- log(covariates$Population)
+```
+
+### Example model
+```{r}
+formula <- migration ~ 
+                        edges + 
+                        sender("Population") + 
+                        receiver("Population") +
+                        sender("Population_Density") +
+                        receiver("Population_Density") +
+                        sender("GDP") +
+                        receiver("GDP") +
+                        sender("Crime_Index") +
+                        receiver("Crime_Index") +
+                        nodematch("Language") +
+                        netcov(borders) +
+                        in2stars(alpha = 0.8) +
+                        out2stars(alpha = 0.8) +
+                        mutual(alpha = 0.8)
+
+
+model <- GERGM::gergm(formula,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 40000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      seed = 456,
+                      convergence_tolerance = 0.5,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+```
+dfsadf
+```{r}
+data.frame(colnames(covariates))
+```
+
+
+
+
+
+
+### Checking other fun stuff like details of the model
+```{r}
+(EstSE <- rbind(t(attributes(model)$theta.coef), t(attributes(model)$lambda.coef)))
+
+GERGM::Estimate_Plot(model,
+              coefficients_to_plot = "both",
+              leave_out_coefficients = "intercept")
+
+xtable::xtable(EstSE, dig=4)
+
+summary(attributes(model))
+```
+
+
+
+
+
+
+
+
+

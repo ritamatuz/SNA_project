@@ -12,7 +12,7 @@ data("covariate_data_2005")
 data("net_exports_2005")
 
 formula <- lending_2005 ~ edges + mutual(alpha = 0.8) + sender("log_GDP") + 
-  receiver("log_GDP") + nodemix("G8", base = "No") + netcov(net_exports_2005) 
+  receiver("log_GDP") + nodemix("G8", base = "No") + netcov(net_exports_2005) + nodecov("log_GDP")
 
 test <- GERGM::gergm(formula,
               covariate_data = covariate_data_2005,
@@ -22,6 +22,8 @@ test <- GERGM::gergm(formula,
               MCMC_burnin = 10000,
               seed = 456,
               convergence_tolerance = 0.5)
+
+?gergm
 ```
 
 ### Reading the data and formatting it for the gergm package
@@ -96,7 +98,7 @@ model1 <- GERGM::gergm(formula1,
 
 ### Second model with "mutual"
 ```{r}
-formula2 <- migration_mat ~ edges + mutual
+formula2 <- migration_mat ~ edges + mutual(alpha = 0.25)
 
 model2 <- GERGM::gergm(formula2,
                        covariate_data = covariates,
@@ -119,7 +121,7 @@ formula3 <- migration_mat ~
                             edges + 
                             sender("Population") + 
                             sender("Crime_Index") + 
-                            in2stars(alpha = 1) + 
+                            in2stars(alpha = 0.8) + 
                             nodematch("Language")
 
 model3 <- GERGM::gergm(formula3,
@@ -130,9 +132,17 @@ model3 <- GERGM::gergm(formula3,
                        MCMC_burnin = 10000,
                        seed = 456,
                        convergence_tolerance = 0.5,
-                       maximum_number_of_theta_updates = 10)
+                       maximum_number_of_theta_updates = 10,
+                       maximum_number_of_lambda_updates = 10)
 # verbose = FALSE
 # maximum_number_of_theta_updates = 20
+```
+```{r}
+(EstSE <- rbind(t(attributes(model3)$theta.coef), t(attributes(model3)$lambda.coef)))
+GERGM::Estimate_Plot(model3,
+              coefficients_to_plot = "both",
+              leave_out_coefficients = "intercept")
+xtable::xtable(EstSE, dig=4)
 ```
 
 
@@ -163,6 +173,17 @@ model4 <- GERGM::gergm(formula4,
 # verbose = FALSE
 # maximum_number_of_theta_updates = 20
 ```
+..
+
+```{r}
+(EstSE <- rbind(t(attributes(model4)$theta.coef),
+                t(attributes(model4)$lambda.coef)))
+
+summary(attributes(model4))
+
+
+```
+
 
 
 ### Fifth model with all endogenous and exogenous effects
@@ -191,8 +212,12 @@ model5 <- GERGM::gergm(formula5,
                        MCMC_burnin = 10000,
                        seed = 456,
                        convergence_tolerance = 0.5,
-                       maximum_number_of_theta_updates = 10)
+                       maximum_number_of_theta_updates = 10,
+                       maximum_number_of_lambda_updates = 10)
 # verbose = FALSE
 # maximum_number_of_theta_updates = 20
+```
+```{r}
+texreg::screenreg(list(model1, model3, model4))
 ```
 
