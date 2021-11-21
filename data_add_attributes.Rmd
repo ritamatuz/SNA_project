@@ -1,0 +1,55 @@
+---
+title: "Add new attributes"
+output: html_notebook
+---
+MIGRATION DATA (for filtering)
+Load migration data
+```{r}
+inflow_data <- read.csv("migration.csv")
+```
+
+
+FREEDOM DATA
+Load freedom data
+```{r}
+freedom_data <- read.csv("data_original/freedom.csv")
+head(freedom_data)
+freedom_data[order(freedom_data$Score.2020), ]
+```
+
+Filter freedom data
+```{r}
+names(freedom_data)[names(freedom_data) == "EN_country"] <- "Country"
+names(freedom_data)[names(freedom_data) == "Score.2020"] <- "Freedom_2020"
+freedom_data_filtered <- subset(freedom_data, Country %in% unique(inflow_data$To)) 
+freedom_data_filtered <- subset(freedom_data, select = c(Country, Freedom_2020), Country %in% unique(inflow_data$To)) 
+# Convert "n,n" to n.n
+freedom_data_filtered$Freedom_2020 <- as.double(gsub(",", ".", freedom_data_filtered$Freedom_2020))
+
+print (freedom_data_filtered)
+```
+
+UNEMPLOYMENT DATA
+Load unemployment data
+```{r}
+unemployment_data <- read.csv("data_original/unemployment.csv")
+head(unemployment_data)
+```
+
+Filter unemployment data
+```{r}
+names(unemployment_data)[names(unemployment_data) == "ï..Country.Name"] <- "Country"
+names(unemployment_data)[names(unemployment_data) == "X2020"] <- "Unemployment_2020"
+unemployment_data_filtered <- subset(unemployment_data, select = c(Country, Unemployment_2020), Country %in% unique(inflow_data$To)) 
+```
+
+JOINING THE COVARIATE TABLES
+```{r}
+print(length(freedom_data_filtered$Country))
+print(length(unemployment_data_filtered$Country))
+
+covariates <- merge(x=freedom_data_filtered, y=unemployment_data_filtered, by="Country")
+
+write.csv(covariates, "covariates_2.csv")
+
+```
