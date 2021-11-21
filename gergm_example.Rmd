@@ -75,13 +75,31 @@ SIGNIFICANCE BASED ON LOWER & UPPER SE
 (EstSE <- rbind(t(attributes(model)$theta.coef), t(attributes(model)$lambda.coef)))
 EstSE_df = as.data.frame(EstSE)
 
-EstSE_df$LOWER = EstSE_df$se*(-qnorm((1-0.9)/2))
-EstSE_df$UPPER = EstSE_df$se*(-qnorm((1-0.95)/2))
+EstSE_df$LOWER = EstSE_df$est - EstSE_df$se*(-qnorm((1-0.95)/2))
+EstSE_df$UPPER = EstSE_df$est + EstSE_df$se*(-qnorm((1-0.95)/2))
 
 # If LOWER and UPPER have the same sign (positive/negative) then there's significance
 EstSE_df$Significant = (EstSE_df$LOWER > 0 & EstSE_df$UPPER > 0) | (EstSE_df$LOWER < 0 & EstSE_df$UPPER < 0)
 
 ```
+
+
+GERGM LogCauchy transformation
+```{r}
+# (Cauchy is the default transformation, so we skip it)
+model <- GERGM::gergm(formula,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 40000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      seed = 456,
+                      convergence_tolerance = 0.5,
+                      transformation_type = "LogCauchy",
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+```
+
 
 
 ### Checking other fun stuff like details of the model
