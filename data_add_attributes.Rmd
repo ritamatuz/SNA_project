@@ -6,6 +6,7 @@ MIGRATION DATA (for filtering)
 Load migration data
 ```{r}
 inflow_data <- read.csv("migration.csv")
+print (sort(unique(inflow_data$To)))
 ```
 
 
@@ -19,14 +20,19 @@ freedom_data[order(freedom_data$Score.2020), ]
 
 Filter freedom data
 ```{r}
+# Renaming
 names(freedom_data)[names(freedom_data) == "EN_country"] <- "Country"
 names(freedom_data)[names(freedom_data) == "Score.2020"] <- "Freedom_2020"
+
+# Remove excess countries
 freedom_data_filtered <- subset(freedom_data, Country %in% unique(inflow_data$To)) 
 freedom_data_filtered <- subset(freedom_data, select = c(Country, Freedom_2020), Country %in% unique(inflow_data$To)) 
-# Convert "n,n" to n.n
+
 freedom_data_filtered$Freedom_2020 <- as.double(gsub(",", ".", freedom_data_filtered$Freedom_2020))
 
-print (freedom_data_filtered)
+
+
+print (sort(freedom_data_filtered$Country))
 ```
 
 UNEMPLOYMENT DATA
@@ -50,6 +56,18 @@ print(length(unemployment_data_filtered$Country))
 
 covariates <- merge(x=freedom_data_filtered, y=unemployment_data_filtered, by="Country")
 
-write.csv(covariates, "covariates_2.csv")
+# Replace spaces with underscores (e.g., "United States" -> "United_States")
+covariates$Country <- gsub(" ", "_", covariates$Country)
+
 
 ```
+REPLACE OLD COVARIATE FILE
+Join the new covariates to the old ones
+```{r}
+existing_data = read.csv("data_final/old_covariates.csv",sep=";")
+new_covariates <- merge(x=existing_data, y=covariates, by="Country")
+
+write.csv(new_covariates, "data_final/covariates.csv")
+```
+
+
