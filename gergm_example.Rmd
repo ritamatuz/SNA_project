@@ -5,7 +5,7 @@ output: html_notebook
 
 ### Importing data
 ```{r}
-covariates <- read.table("data_final/covariates.csv", row.names = 1, sep = ";", header = TRUE)
+covariates <- read.table("data_final/covariates.csv", row.names = 1, sep = ",", header = TRUE)
 borders <- as.matrix(read.table("data_final/borders_adjacency_matrix.csv", sep = ";", row.names = 1, header = TRUE))
 migration <- as.matrix(read.table("data_final/migration_adjacency_matrix.csv", sep = ";", row.names = 1, header = TRUE))
 ```
@@ -19,7 +19,7 @@ GERGM::plot_network(borders, white_background = TRUE, show_legend = FALSE)
 ### Scaling the data
 ```{r}
 summary(covariates)
-#covariates <- subset(covariates, select = -c(Area, Safety_Index))
+                                                                     #covariates <- subset(covariates, select = -c(Area, Safety_Index))
 
 # You could do something like this to put covariates on a different scale like million inhabitants
 # covariates$Population <- covariates$Population / 1000000
@@ -39,6 +39,10 @@ formula <- migration ~
                         receiver("GDP") +
                         sender("Crime_Index") +
                         receiver("Crime_Index") +
+                        sender("Freedom_2020") +
+                        receiver("Freedom_2020") +
+                        sender("Unemployment_2020") +
+                        receiver("Unemployment_2020") +
                         nodematch("Language") +
                         netcov(borders) +
                         in2stars(alpha = 0.8) +
@@ -66,18 +70,29 @@ data.frame(colnames(covariates))
 
 
 
+SIGNIFICANCE BASED ON LOWER & UPPER SE 
+```{r}
+(EstSE <- rbind(t(attributes(model)$theta.coef), t(attributes(model)$lambda.coef)))
+EstSE_df = as.data.frame(EstSE)
+
+EstSE_df$LOWER = EstSE_df$se*(-qnorm((1-0.9)/2))
+EstSE_df$UPPER = EstSE_df$se*(-qnorm((1-0.95)/2))
+
+# If LOWER and UPPER have the same sign (positive/negative) then there's significance
+EstSE_df$Significant = (EstSE_df$LOWER > 0 & EstSE_df$UPPER > 0) | (EstSE_df$LOWER < 0 & EstSE_df$UPPER < 0)
+
+```
+
 
 ### Checking other fun stuff like details of the model
 ```{r}
-(EstSE <- rbind(t(attributes(model)$theta.coef), t(attributes(model)$lambda.coef)))
-
-GERGM::Estimate_Plot(model,
-              coefficients_to_plot = "both",
-              leave_out_coefficients = "intercept")
-
-xtable::xtable(EstSE, dig=4)
-
-summary(attributes(model))
+# GERGM::Estimate_Plot(model,
+#               coefficients_to_plot = "both",
+#               leave_out_coefficients = "intercept")
+# 
+# xtable::xtable(EstSE, dig=4)
+# 
+# summary(attributes(model))
 ```
 
 
