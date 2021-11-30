@@ -1,0 +1,212 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+### Importing data
+```{r}
+covariates <- read.table("data_final/covariates.csv", row.names = 1, sep = ";", header = TRUE)
+covariates <- subset(covariates, select = -c(Area, Safety_Index))
+borders <- as.matrix(read.table("data_final/borders_adjacency_matrix.csv", sep = ";", row.names = 1, header = TRUE))
+migration <- as.matrix(read.table("data_final/migration_adjacency_matrix.csv", sep = ";", row.names = 1, header = TRUE))
+```
+
+### Plotting data
+```{r}
+GERGM::plot_network(migration, white_background = TRUE, show_legend = FALSE)
+GERGM::plot_network(borders, white_background = TRUE, show_legend = FALSE)
+```
+
+### Scaling the data
+```{r}
+summary(covariates)
+
+# You could do something like this to put covariates on a different scale like million inhabitants
+covariates$Population <- covariates$Population / 1000000
+# Or this to try log scales like Claudia suggested
+# covariates$Population <- log(covariates$Population)
+covariates$GDP <- log(covariates$GDP)
+
+summary(covariates)
+```
+
+### Get rid of zeroes
+```{r}
+migration[migration == 0] <- 0.01
+diag(migration) <- 0
+```
+
+### Checking edge distribution
+```{r}
+h <- hist(migration, breaks = 100)
+
+xfit <- seq(min(migration), max(migration), length = 40) 
+yfit <- VaRES::dlogcauchy(xfit, mu=0, sigma=1, log=FALSE) 
+ayfit <- yfit * diff(h$mids[1:2]) * length(migration) 
+
+lines(xfit, yfit, col = "red", lwd = 2)
+
+```
+
+### Checking descriptives
+```{r}
+hist(covariates$Population, breaks = 30,      
+     main = "Histogram of population",     
+     xlab = "Population",
+     probability = TRUE,
+     col = "peachpuff")
+lines(density(covariates$Population), lwd = 2, col = "chocolate3")
+
+hist(covariates$Population_Density, breaks = 20,      
+     main = "Histogram of population density",     
+     xlab = "Population density",
+     probability = TRUE,
+     col = "peachpuff")
+lines(density(covariates$Population_Density), lwd = 2, col = "chocolate3")
+
+hist(covariates$GDP, breaks = 20,      
+     main = "Histogram of GDP",     
+     xlab = "(log?) GDP",
+     probability = TRUE,
+     col = "peachpuff")
+lines(density(covariates$GDP), lwd = 2, col = "chocolate3")
+
+hist(covariates$Crime_Index, breaks = 20,      
+     main = "Histogram of crime index",     
+     xlab = "Crime index",
+     probability = TRUE,
+     col = "peachpuff")
+lines(density(covariates$Crime_Index), lwd = 2, col = "chocolate3")
+
+hist(covariates$Freedom_2020, breaks = 20,      
+     main = "Histogram of freedom index",     
+     xlab = "Freedom index",
+     probability = TRUE,
+     col = "peachpuff")
+lines(density(covariates$Freedom_2020), lwd = 2, col = "chocolate3")
+
+hist(covariates$Unemployment_2020, breaks = 20,      
+     main = "Histogram of unemployment rate",     
+     xlab = "Unemployment rate",
+     probability = TRUE,
+     col = "peachpuff")
+lines(density(covariates$Unemployment_2020), lwd = 2, col = "chocolate3")
+```
+
+### Checking for multicollinearity
+```{r}
+#
+is_numeric <- sapply(covariates, is.numeric)
+
+bootcamp2021::corrNetwork(covariates[, is_numeric], 
+                  remove_below_abs = .2)
+
+bootcamp2021::betterpairs(covariates[, is_numeric])
+
+```
+
+
+### Example model
+```{r}
+formula <- migration ~ 
+                        edges + 
+                        sender("Population") + 
+                        receiver("Population") +
+                        sender("Population_Density") +
+                        receiver("Population_Density") +
+                        sender("Crime_Index") +
+                        receiver("Crime_Index") +
+                        sender("Freedom_2020") +
+                        receiver("Freedom_2020") +
+                        sender("Unemployment_2020") +
+                        receiver("Unemployment_2020") +
+                        netcov(borders) +
+                        in2stars(alpha = 0.8) +
+                        out2stars(alpha = 0.8) +
+                        mutual(alpha = 0.8) +
+                        ttriads(alpha = 0.8)
+                        
+start_time <- Sys.time()
+print("Started at:")
+print(start_time)
+
+model <- GERGM::gergm(formula,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 50000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      seed = 456,
+                      convergence_tolerance = 0.5)
+
+elapsed_time <- Sys.time() - start_time
+print("Elapsed_time:")
+print(elapsed_time)
+
+
+          #              nodematch("Language") +
+
+           #             sender("GDP") +
+          #              receiver("GDP") +
+          #              ttriads(alpha = 0.8)
+```
+dfsadf
+```{r}
+data.frame(colnames(covariates))
+```
+
+
+
+
+
+SIGNIFICANCE BASED ON LOWER & UPPER SE 
+```{r}
+(EstSE <- rbind(t(attributes(model)$theta.coef), t(attributes(model)$lambda.coef)))
+EstSE_df = as.data.frame(EstSE)
+
+EstSE_df$LOWER = EstSE_df$est - EstSE_df$se*(-qnorm((1-0.90)/2))
+EstSE_df$UPPER = EstSE_df$est + EstSE_df$se*(-qnorm((1-0.90)/2))
+
+# If LOWER and UPPER have the same sign (positive/negative) then there's significance
+EstSE_df$Significant = (EstSE_df$LOWER > 0 & EstSE_df$UPPER > 0) | (EstSE_df$LOWER < 0 & EstSE_df$UPPER < 0)
+
+```
+
+
+GERGM LogCauchy transformation
+```{r}
+# (Cauchy is the default transformation, so we skip it)
+model <- GERGM::gergm(formula,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 40000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      seed = 456,
+                      convergence_tolerance = 0.5,
+                      transformation_type = "LogCauchy",
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+```
+
+
+
+### Checking other fun stuff like details of the model
+```{r}
+# GERGM::Estimate_Plot(model,
+#               coefficients_to_plot = "both",
+#               leave_out_coefficients = "intercept")
+# 
+# xtable::xtable(EstSE, dig=4)
+# 
+# summary(attributes(model))
+```
+
+
+
+
+
+
+
+
+
