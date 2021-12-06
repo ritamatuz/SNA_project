@@ -94,25 +94,47 @@ what are your results and the main conclusion?
 
 
 ## Introduction 
-(about 1000 words) – 0.5 POINTS
-Place your topic of choice within the existing literature and explain what you 
-are going to address in this report and why.
 
-*	What is the main topic that is going to be studied in this paper?
+### Determinants of international migration
 
-*	Why is it important?
+International migration is an important feature of global economy, continuously shaping the demographics of our globalized world. It is predicted that international migration is likely to grow and become more complex in the coming decades, due to factors such as an aging population, growing economic inequalities and climate change [@klugman2009human]. As it has an impact on receiving as well as sending countries, researching why people migrate, how they choose their destination countries, and how this migration changes over time are important to better understand global trends and inform policy decisions.
 
-*	What are the existing studies that address it already?
+One of the classical methods for investigating the determinants of migration are gravity models [@boyle2014exploring], their main components are population size and geographical proximity. There are more factors that influence migration according to the available literature, and these are typically grouped in two categories: push and pull factors [@langley2016push]. Push factors are those associated with the country of origin of the migrant and are related to their decision to migrate, examples of these are natural disasters, violence, poverty, and unemployment. Pull factors are associated with the destination country of the migrant, these can be economic prosperity and employment opportunities, favourable climate, and political stability. Migration movements can also be encouraged by homophily in the dominant religion and language, which lower the expected costs of acculturation [@belot2012cultural]. 
 
-*	What are your questions and hypotheses? Why are they important? How are they 
-connected to previous work or to a problem you raised?
+### Network perspective
 
-*	Which methods are you using? Why?
+The flows of international migration naturally constitute a directed and valued network where nodes represent countries. The outbound edges are the number of citizens each country sends to every other country in the network, this way the inbound edges of a node represent the number of citizens received from each country. Characteristics describing the nodes and the edges between them can be included as covariates.
 
-*	How is your work going to contribute to the field/or to whom (e.g., industry)?
+Statistical network analysis captures the interconnectedness of countries and allows for the influence of various factors on migration to be measured without assuming independence that does not hold in migration data [@desmarais2012statistical]. Despite network analysis being suitable for modelling such phenomena, to this day surprisingly few studies have used this perspective to better understand international migration [@fagiolo2013international, @tranos2015international, @windzio2018network].
 
-*	What does the rest of the report look like? In one short paragraph, list the 
-topics of the following sections.
+An example of a study that looks at international migration from a network perspective was conducted by @windzio2018network. Their results from a global dataset were in line with the gravity models and theories of global inequality when examining the determinants of migration using temporal and cross-sectional exponential random graph models (ERGMs). ERGM is a method for statistical inference on networks, which, given a number of statistics that capture the essential generative structures of the network, estimates the probability of the observed network [@cranmer2011inferential]. This method takes into account the interdependent nature of migration and allows for modelling both endogenous dependencies and exogenous covariates of the network. Instead of flows of migrants, however, @windzio2018network used data on stocks of persons born in a different country, and instead of looking at the number of migrants, they used quartiles of the measure of the migration distribution in order to reduce the data into a binary network. While ERGMs are a ubiquitous means of network analysis, their inability to model networks with valued edges is a strong limitation for modelling migration networks, as thresholding weighted edges into binary ones leads to a considerable loss of information on the vastly different magnitudes of migration that different edges of the network represent.
+
+The generalized exponential random graph model (GERGM), developed by @desmarais2012statistical, is a method that generalizes ERGMS to be used for value-edged networks, making it suitable for studying migration networks. @desmarais2012statistical used GERGMs to model interstate migration flows within the United States, and @abramski2018network used the method to study refugee migration flows from four countries experiencing violent conflicts, finding that the GERGM is a better way for modelling this specific problem compared to the ERGM.
+
+### Our research
+
+In this report, we aim to contribute to the literature on international migration by examining it from a network perspective using generalized random graph models. Using a dataset of migration flows within the member countries of the Organization for Economic Co-operation and Development (OECD) in 2019, we look at the properties of this network and set up a model on the determinants of international migration.
+
+Using the network perspective, it becomes possible to quantify the network properties of the international migration network. It is generally assumed that migration networks exhibit a high level of clustering [@fagiolo2013international], but to statistically test this proposition, we apply a conditional uniform graph (CUG) test. We focus our attention to clustering only, as this is a network-level measure for which a generalization has been proposed and implemented which is suitable for weighted networks [@opsahl2009clustering].
+
+_Research question 1: Does the international migration network of the OECD countries exhibit a high degree of clustering?_
+
+_Hypothesis 1: The international migration network of the OECD countries exhibits a high degree of clustering._
+
+We examine the effects of several driving factors of migration suggested by earlier literature: population, population density, shared borders, shared language, shared religion, GDP, crime index, freedom index, and unemployment rate [@belot2012cultural, @langley2016push, @windzio2018network]. Our contribution is examining this subject from the network perspective and employing GERGM, a model that is highly suitable for this kind of data but has not been used in the research of international migration before. This model allows for the inclusion of endogenous effects, regarding which we hypothesise that there is no significant reciprocity in the network, similarly to the interstate migration network within the United States studied by @desmarais2012statistical. 
+
+_Research question 2: What factors drive migration within the OECD countries?_
+
+_Hypothesis 2: Large population, high population density, low GDP, high crime, low freedom, and high unemployment rate are push factors of international migration within OECD countries._
+
+_Hypothesis 3: Large population, high population density, high GDP, low crime, high freedom, and low unemployment rate are pull factors of international migration within OECD countries._
+
+_Hypothesis 4: Sharing the same dominant language, religion, as well as sharing borders increases migration between OECD countries._
+
+_Hypothesis 5: The international migration network of the OECD countries does not exhibit reciprocity._
+
+The structure of the rest of the report is as follows. The method section explains the data used in this study, and the methods we use to run our analysis. Subsequently, the results section presents and discusses the outcomes of the analysis for each research question respectively. Finally, the report is closed with a short conclusion section.
+
 
 ## Methodology
 
