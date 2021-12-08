@@ -1,0 +1,69 @@
+---
+title: "CUG Notebook"
+output: html_notebook
+---
+
+
+Loading data
+
+```{r}
+migration <- as.matrix(read.table("data_final/migration_adjacency_matrix.csv", sep = ";", row.names = 1, header = TRUE))
+```
+
+
+Function for creating edge list from adjacency matrix
+
+```{r}
+
+clustering_function <- function(dat) {
+  
+    edge_list <- matrix(0, (nrow(dat) * nrow(dat)), 3)
+
+    for(row in 1:NROW(dat))
+    {
+      for(column in 1:NROW(dat))
+      {
+        
+      edge_list[(row-1)*nrow(dat) + column, 1] <- row
+      edge_list[(row-1)*nrow(dat) + column, 2] <- column
+      edge_list[(row-1)*nrow(dat) + column, 3] <- dat[row, column]
+      }
+    }
+    
+    
+    # Find clustering coefficient
+
+    cc <- tnet::clustering_w(edge_list, measure=c("bi", "am", "gm", "ma", "mi"))
+
+    # Here I'm returning the minimum value
+    cc[[2]]
+}
+
+
+```
+
+
+Run CUG
+```{r}
+suppressWarnings(
+ 
+   
+cug <- sna::cug.test(dat=migration, 
+                    FUN=clustering_function, 
+                    mode="digraph",
+                    ignore.eval=FALSE,
+                    reps=1000) # default is 1000
+
+)
+
+cug
+
+```
+
+Plot
+
+```{r}
+plot(cug)
+```
+
+
