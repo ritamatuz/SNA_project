@@ -22,3 +22,8 @@ https://en.wikipedia.org/wiki/List_of_official_languages_by_country_and_territor
 Crime and safety:
 
 https://www.kaggle.com/dumbgeek/countries-dataset-2020?select=Crime+index+by+countries+2020.csv
+
+
+Religion:
+
+https://www.nationmaster.com/country-info/stats/Religion/Religions/All
