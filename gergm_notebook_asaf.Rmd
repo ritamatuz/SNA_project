@@ -1,0 +1,437 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+### Importing data
+```{r}
+covariates <- read.table("data_final/covariates.csv", row.names = 1, sep = ",", header = TRUE)
+borders <- as.matrix(read.table("data_final/borders_adjacency_matrix.csv",sep = ";", row.names = 1, header = TRUE))
+migration <- as.matrix(read.table("data_final/migration_adjacency_matrix.csv", sep = ";", row.names = 1, header = TRUE))
+
+
+```
+
+### Plotting data
+```{r}
+GERGM::plot_network(migration, white_background = TRUE, show_legend = FALSE)
+GERGM::plot_network(borders, white_background = TRUE, show_legend = FALSE)
+```
+
+### Scaling the data
+```{r}
+summary(covariates)
+                                                                     #covariates <- subset(covariates, select = -c(Area, Safety_Index))
+
+# You could do something like this to put covariates on a different scale like million inhabitants
+# covariates$Population <- covariates$Population / 1000000
+# Or this to try log scales like Claudia suggested
+# covariates$Population <- log(covariates$Population)
+```
+
+### Cauchy model: 00
+```{r}
+formula <- migration ~ 
+                        edges + 
+                        sender("Population") + 
+                        receiver("Population") +
+                        sender("Population_Density") +
+                        receiver("Population_Density") +
+                        sender("GDP") +
+                        receiver("GDP") +
+                        sender("Crime_Index") +
+                        receiver("Crime_Index") +
+                        sender("Freedom_2020") +
+                        receiver("Freedom_2020") +
+                        sender("Unemployment_2020") +
+                        receiver("Unemployment_2020") +
+                        nodematch("Language") +
+                        netcov(borders) +
+                        in2stars(alpha = 0.8) +
+                        out2stars(alpha = 0.8) +
+                        mutual(alpha = 0.8)
+
+
+model <- GERGM::gergm(formula,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 40000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      # hyperparameter_optimization = TRUE,
+                      seed = 456,
+                      convergence_tolerance = 0.5,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+beepr::beep()
+```
+### Cauchy model lower convergence tolerance: 01
+```{r}
+model01 <- GERGM::gergm(formula,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 40000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      # hyperparameter_optimization = TRUE,
+                      seed = 456,
+                      convergence_tolerance = 0.3,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+beepr::beep()
+```
+
+### Cauchy model higher convergence tolerance: 02
+```{r}
+model02 <- GERGM::gergm(formula,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 40000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      # hyperparameter_optimization = TRUE,
+                      seed = 456,
+                      convergence_tolerance = 0.7,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+beepr::beep()
+```
+
+
+### Cauchy model lower proposal variance: 03
+```{r}
+model03 <- GERGM::gergm(formula,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 40000,
+                      thin = 1/100,
+                      proposal_variance = 0.03,
+                      MCMC_burnin = 10000,
+                      # hyperparameter_optimization = TRUE,
+                      seed = 456,
+                      convergence_tolerance = 0.5,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+beepr::beep()
+```
+
+### DIDN'T WORK Cauchy model higher proposal variance (default): 04
+```{r}
+model04 <- GERGM::gergm(formula,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 40000,
+                      thin = 1/100,
+                      proposal_variance = 0.1,
+                      MCMC_burnin = 10000,
+                      # hyperparameter_optimization = TRUE,
+                      seed = 456,
+                      convergence_tolerance = 0.5,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+beepr::beep()
+```
+
+
+
+
+### Exclude language 
+```{r}
+formula_no_language <- migration ~ 
+                        edges + 
+                        sender("Population") + 
+                        receiver("Population") +
+                        sender("Population_Density") +
+                        receiver("Population_Density") +
+                        sender("GDP") +
+                        receiver("GDP") +
+                        sender("Crime_Index") +
+                        receiver("Crime_Index") +
+                        sender("Freedom_2020") +
+                        receiver("Freedom_2020") +
+                        sender("Unemployment_2020") +
+                        receiver("Unemployment_2020") +
+                        netcov(borders) +
+                        in2stars(alpha = 0.8) +
+                        out2stars(alpha = 0.8) +
+                        mutual(alpha = 0.8)
+
+
+model_no_language <- GERGM::gergm(formula_no_language,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 40000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      seed = 456,
+                      convergence_tolerance = 0.5,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+```
+
+### Cauchy model lower convergence tolerance: 11
+```{r}
+model11 <- GERGM::gergm(formula_no_language,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 40000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      # hyperparameter_optimization = TRUE,
+                      seed = 456,
+                      convergence_tolerance = 0.3,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+beepr::beep()
+```
+
+### Cauchy model higher convergence tolerance: 12
+```{r}
+model12 <- GERGM::gergm(formula_no_language,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 40000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      # hyperparameter_optimization = TRUE,
+                      seed = 456,
+                      convergence_tolerance = 0.7,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+beepr::beep()
+```
+
+
+### no_language model lower proposal variance: 13
+```{r}
+model13 <- GERGM::gergm(formula_no_language,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 40000,
+                      thin = 1/100,
+                      proposal_variance = 0.03,
+                      MCMC_burnin = 10000,
+                      # hyperparameter_optimization = TRUE,
+                      seed = 456,
+                      convergence_tolerance = 0.5,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+beepr::beep()
+```
+
+### DIDN'T WORK no_language model higher proposal variance (default): 14
+```{r}
+model14 <- GERGM::gergm(formula_no_language,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 40000,
+                      thin = 1/100,
+                      proposal_variance = 0.1,
+                      MCMC_burnin = 10000,
+                      # hyperparameter_optimization = TRUE,
+                      seed = 456,
+                      convergence_tolerance = 0.5,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+beepr::beep()
+```
+
+# Model 2: 100 000 networks (more)
+```{r}
+model2 <- GERGM::gergm(formula,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 100000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      # hyperparameter_optimization = TRUE,
+                      seed = 456,
+                      convergence_tolerance = 0.5,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+beepr::beep()
+```
+# Model 3: 400 000 networks (more)
+```{r}
+model3 <- GERGM::gergm(formula,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 400000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      # hyperparameter_optimization = TRUE,
+                      seed = 456,
+                      convergence_tolerance = 0.5,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+beepr::beep()
+```
+
+Covariates & Summary
+```{r}
+data.frame(colnames(covariates))
+# summary(attributes(model))
+# # this one's OK
+# gof <- GERGM::GOF(model, return_GERGM_Object = TRUE)
+# gof01 <- GERGM::GOF(model01, return_GERGM_Object = TRUE)
+# worse
+# gof02 <- GERGM::GOF(model02, return_GERGM_Object = TRUE)
+# gof03 <- GERGM::GOF(model03, return_GERGM_Object = TRUE)
+# broken
+# gof04 <- GERGM::GOF(model04, return_GERGM_Object = TRUE)
+# gof10 <- GERGM::GOF(model_no_language, return_GERGM_Object = TRUE)
+# the 6th graph is nicer
+# gof11 <- GERGM::GOF(model11, return_GERGM_Object = TRUE)
+# gof12 <- GERGM::GOF(model12, return_GERGM_Object = TRUE)
+# gof13 <- GERGM::GOF(model13, return_GERGM_Object = TRUE)
+# broken
+# gof14 <- GERGM::GOF(model14, return_GERGM_Object = TRUE)
+# HORRIBLE
+# gof2 <- GERGM::GOF(model2, return_GERGM_Object = TRUE)
+gof3 <- GERGM::GOF(model3, return_GERGM_Object = TRUE)
+# beepr::beep()
+```
+
+
+# TODO after getting the best of the previous models, make a model with more networks simulated
+
+
+SIGNIFICANCE BASED ON LOWER & UPPER SE 
+```{r}
+(EstSE <- rbind(t(attributes(model)$theta.coef), t(attributes(model)$lambda.coef)))
+EstSE_df = as.data.frame(EstSE)
+
+EstSE_df$LOWER = EstSE_df$est - EstSE_df$se*(-qnorm((1-0.95)/2))
+EstSE_df$UPPER = EstSE_df$est + EstSE_df$se*(-qnorm((1-0.95)/2))
+
+# If LOWER and UPPER have the same sign (positive/negative) then there's significance
+EstSE_df$Significant = (EstSE_df$LOWER > 0 & EstSE_df$UPPER > 0) | (EstSE_df$LOWER < 0 & EstSE_df$UPPER < 0)
+
+```
+Non-zero model
+```{r}
+zeroless_migration <- migration
+zeroless_migration[zeroless_migration==0] <- 0.01
+diag(zeroless_migration) <- 0
+
+zeroless_formula <- zeroless_migration ~ 
+                        edges + 
+                        sender("Population") + 
+                        receiver("Population") +
+                        sender("Population_Density") +
+                        receiver("Population_Density") +
+                        sender("GDP") +
+                        receiver("GDP") +
+                        sender("Crime_Index") +
+                        receiver("Crime_Index") +
+                        sender("Freedom_2020") +
+                        receiver("Freedom_2020") +
+                        sender("Unemployment_2020") +
+                        receiver("Unemployment_2020") +
+                        nodematch("Language") +
+                        netcov(borders) +
+                        in2stars(alpha = 0.8) +
+                        out2stars(alpha = 0.8) +
+                        mutual(alpha = 0.8)
+
+```
+
+
+GERGM LogCauchy transformation
+```{r}
+# (Cauchy is the default transformation, so we it is above)
+model <- GERGM::gergm(zeroless_formula,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 40000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 7000, # try less
+                      seed = 456,
+                      convergence_tolerance = 0.5,
+                      transformation_type = "LogCauchy",
+                      maximum_number_of_theta_updates = 5, # try less
+                      maximum_number_of_lambda_updates = 10)
+```
+
+
+Z-scores 
+```{r}
+# qnorm(p, mean = 0, sd = 1, lower.tail = TRUE, log.p = FALSE)
+# p	vector of probabilities.
+# qnorm gives the quantile function
+# Can manually encode the p-values given in the previous cell
+# OR should the z-score formula of each attribute be taken? 
+# z_scores <- (data-mean(data))/sd(data)
+zscore_Population = (covariates$Population - mean(covariates$Population))/sd(covariates$Population)
+
+zscore_Area = (covariates$Area - mean(covariates$Area))/sd(covariates$Area)
+
+zscore_Population_Density = (covariates$Population_Density - mean(covariates$Population_Density))/sd(covariates$Population_Density)
+
+zscore_GDP = (covariates$GDP - mean(covariates$GDP))/sd(covariates$GDP)
+
+zscore_Crime_Index = (covariates$Crime_Index - mean(covariates$Crime_Index))/sd(covariates$Crime_Index)
+
+zscore_Safety_Index = (covariates$Safety_Index - mean(covariates$Safety_Index))/sd(covariates$Safety_Index)
+
+zscore_Freedom_2020 = (covariates$Freedom_2020 - mean(covariates$Freedom_2020))/sd(covariates$Freedom_2020)
+
+zscore_Unemployment_2020 = data.frame(covariates$Unemployment_2020 - mean(covariates$Unemployment_2020))/sd(covariates$Unemployment_2020)
+
+
+z_covariates <- data.frame(zscore_Population, zscore_Area, zscore_Population_Density, zscore_GDP, zscore_Crime_Index, zscore_Safety_Index, zscore_Freedom_2020, zscore_Unemployment_2020)
+
+colnames(z_covariates) <- colnames(covariates)[-7] # W/o freedom
+rownames(z_covariates) <- rownames(covariates)
+# This doesn't converge if we maintain the original GERGM inputs
+```
+
+```{r}
+z_formula <- migration ~ 
+                        edges + 
+                        sender("Population") + 
+                        receiver("Population") +
+                        sender("Population_Density") +
+                        receiver("Population_Density") +
+                        sender("GDP") +
+                        receiver("GDP") +
+                        sender("Crime_Index") +
+                        receiver("Crime_Index") +
+                        sender("Freedom_2020") +
+                        receiver("Freedom_2020") +
+                        sender("Unemployment_2020") +
+                        receiver("Unemployment_2020") +
+                        netcov(borders) +
+                        in2stars(alpha = 0.8) +
+                        out2stars(alpha = 0.8) +
+                        mutual(alpha = 0.8)
+
+
+z_model <- GERGM::gergm(z_formula,
+                      covariate_data = z_covariates,
+                      number_of_networks_to_simulate = 40000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      seed = 456,
+                      convergence_tolerance = 0.5,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+```
+
+
+### Checking other fun stuff like details of the model
+```{r}
+# GERGM::Estimate_Plot(model,
+#               coefficients_to_plot = "both",
+#               leave_out_coefficients = "intercept")
+# 
+# xtable::xtable(EstSE, dig=4)
+# 
+# summary(attributes(model))
+```
+
+
+
+
+
+
+
+
+
