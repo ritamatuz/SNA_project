@@ -1,6 +1,6 @@
 ---
-title             : "The title"
-shorttitle        : "Title"
+title             : "Migratory Determinants Between Member-States of the OECD"
+shorttitle        : "A SNA4DS Report"
 
 author: 
   - name          : "First Author"
