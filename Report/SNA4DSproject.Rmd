@@ -198,18 +198,6 @@ rownames(tab) <- NULL
 knitr::kable(tab)
 ```
 
-
-### ERGM 
-(about 1000) – 2.5 POINTS
-
-
-
-* Present your results appropriately (plots, tables…) and discuss your findings 
-in plain English
-
-* Discuss the meaning of your findings in relation to your hypothesis. (half of 
-the points evaluated in this other part)
-
 Option 1: 
 
 ```{r model 1, echo = FALSE}
@@ -283,6 +271,173 @@ lm.D90 <- lm(weight ~ group - 1)
 texreg::plotreg(list(lm.D9, lm.D90))
 
 ```
+
+
+
+### ERGM 
+(about 1000) – 2.5 POINTS
+
+As discussed earlier in the report, we use a GERGM in order to be able to use weights on the edges in the network. The following covariates are considered: population, population density, GDP, crime index, freedom index, unemployment index, language, borders. Other factors of the GERGM include the edges, in2stars, out2stars, and mutual. The in2stars attribute reflects popularity within a network, out2stars reflects sociality, and mutual reflects reciprocity. 
+
+Several models were tested, but only two of them are investigated in this report. 
+
+The first model takes the data how it is, using directed edge values between nodes as the number of migrations between the countries. Furthermore, each country has sender and receiver values of population, population density, GDP, crime index, freedom index, unemployment index. The language, the religion, the borders and the in2stars, out2stars, and mutual are also inputs. As such, both endogenous and exogenous factors are tested for. 
+
+#### Model 1
+```{r GERGM model 1}
+# Import data
+covariates <- read.table("../data_final/covariates.csv", row.names = 1, sep = ";", header = TRUE)
+borders <- as.matrix(read.table("../data_final/borders_adjacency_matrix.csv",sep = ";", row.names = 1, header = TRUE))
+migration <- as.matrix(read.table("../data_final/migration_adjacency_matrix.csv", sep = ";", row.names = 1, header = TRUE))
+
+
+formula <- migration ~ 
+                        edges + 
+                        sender("Population") + 
+                        receiver("Population") +
+                        sender("Population_Density") +
+                        receiver("Population_Density") +
+                        sender("GDP") +
+                        receiver("GDP") +
+                        sender("Crime_Index") +
+                        receiver("Crime_Index") +
+                        sender("Freedom_2020") +
+                        receiver("Freedom_2020") +
+                        sender("Unemployment_2020") +
+                        receiver("Unemployment_2020") +
+                        nodematch("Language") +
+                        netcov(borders) +
+                        in2stars(alpha = 0.8) +
+                        out2stars(alpha = 0.8) +
+                        mutual(alpha = 0.8)
+
+
+model <- GERGM::gergm(formula,
+                      covariate_data = covariates,
+                      number_of_networks_to_simulate = 400000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      seed = 456,
+                      convergence_tolerance = 0.5,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+
+gof <- GERGM::GOF(model, return_GERGM_Object = TRUE)
+
+```
+
+```{r Print GERGM model 1}
+# Print in a different block in case of errors in the previous one (don't want to have to repeat blocks which take a long time)
+install.packages("texreg")
+texreg::plotreg(list(model, gof))
+```
+
+```{r Significance of GERGM model 1}
+# Check for significance
+(EstSE <- rbind(t(attributes(model)$theta.coef), t(attributes(model)$lambda.coef)))
+EstSE_df = as.data.frame(EstSE)
+
+EstSE_df$LOWER = EstSE_df$est - EstSE_df$se*(-qnorm((1-0.95)/2))
+EstSE_df$UPPER = EstSE_df$est + EstSE_df$se*(-qnorm((1-0.95)/2))
+
+# If LOWER and UPPER have the same sign (positive/negative) then there's significance
+EstSE_df$Significant = (EstSE_df$LOWER > 0 & EstSE_df$UPPER > 0) | (EstSE_df$LOWER < 0 & EstSE_df$UPPER < 0)
+knitr::kable(texreg::matrixreg(EstSE_df)) # TODO check the right function in this table
+
+```
+
+The resulting model has the observed and simulated statistics as quite similar to each other, as can be seen in the goodness of fit plots. However, none of the attributes other than in2stars, out2stars, the intercept and dispersion are significant. This implies that Hypotheses 2, 3, 4 do not hold, and Hypothesis 5 does. This does not fit with the earlier research results of @belot2012cultural, @langley2016push and @windzio2018network, who find that each of these factors is significant. This is surprising because the simulated does fit well with the observed one, which seems to imply that our results would be similar to previously found ones in the literature. It may be caused by an unresolved high level of skewness in the data, as is shown below. To attempt to resolve this, model 2 is introduced in the Model 2 sub-section.
+
+```{r Skewness}
+h <- hist(migration, breaks = 100)
+
+xfit <- seq(min(migration), max(migration), length = 40)
+yfit <- VaRES::dlogcauchy(xfit, mu=0, sigma=1, log=FALSE)
+ayfit <- yfit * diff(h$mids[1:2]) * length(migration)
+
+textreg::plotreg(lines(xfit, yfit, col = "red", lwd = 2))
+```
+
+For the first model, in2stars and out2stars are significant, which indicates that other factors that we did not account for are significant in simulating the network. Popularity and sociality, which are endogenous to the network, are therefore significant factors. This can be interpreted as meaning that popularity and sociality exist to a significant degree in the network; e.g., some countries are more likely to take in immigrants, while others are more likely to send out emigrants. As mutual—or reciprocity—is not a significant attribute, it means that countries do not equally share migration streams between each other. 
+
+These results suggest that within the OECD countries, population size, population density, GDP, crime, freedom, unemployment are not push-pull factors in migration (Hypotheses 2, 3). The OECD countries are countries that are relatively well-off and generally viewed as the "first-world"; modern, industrial countries. Previous research has focused on migration primarily in the form of refugees, or where one side of the migration is better off than the other side in aspects such as GDP, freedom, or crime, or others investigated. Most of the countries within the OECD do not differ too greatly in these attributes, which could be an explanation for why these factors are not significant motivators of migration within the network of observed countries. <!-- TODO check this last sentence, check variance level of these attributes -->
+
+Language, religion, and borders are not significant within OECD countries either (Hypothesis 4). This could be explained by the fact that most of the countries investigated do not border each other or share a common language. It further suggests that having a shared language or religion does not significantly affect migration either. There are therefore other factors which are more encouraging for migration to happen. Perhaps these factors are personal and relatively unique to individuals who migrate within OECD countries, such as job opportunities which are not readily available within their own countries, or the wish to live in a more popular country. 
+
+It is somewhat confounding that none of the investigated factors contribute significantly to migration. Some countries have more immigration (popularity) and others have more emigration (sociality) which suggests that there is a cause for these trends in migration. In an attempt to investigate whether these factors may indeed be significant, we introduce the second model.
+
+#### Model 2
+@abramski2020complex performed similar research on inter-country migration, and decided that, due to a high degree of skewness in the data, to log the population and GDP, as well as the edge values. Then, instead of the default Cauchy distribution, Log Cauchy is used. In an attempt to find if some attributes may be significant, we investigate this path as well. 
+
+```{r GERGM model 2}
+covariates_logged <- data.frame(covariates)
+covariates_logged$Population <- log(covariates_logged$Population)
+covariates_logged$GDP <- log(covariates_logged$GDP)
+migration_logged <- log(migration)
+migration_logged[migration_logged == -Inf] <- 0.01
+
+formula_logged <- migration_logged ~ 
+                        edges + 
+                        sender("Population") + 
+                        receiver("Population") +
+                        sender("Population_Density") +
+                        receiver("Population_Density") +
+                        sender("GDP") +
+                        receiver("GDP") +
+                        sender("Crime_Index") +
+                        receiver("Crime_Index") +
+                        sender("Freedom_2020") +
+                        receiver("Freedom_2020") +
+                        sender("Unemployment_2020") +
+                        receiver("Unemployment_2020") +
+                        nodematch("Religion") +
+                        netcov(borders) +
+                        in2stars(alpha = 0.8) +
+                        out2stars(alpha = 0.8) +
+                        mutual(alpha = 0.8)
+
+model_logged <- GERGM::gergm(formula_logged,
+                      covariate_data = covariates_logged,
+                      number_of_networks_to_simulate = 100000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      transformation_type = "LogCauchy",
+                      # hyperparameter_optimization = TRUE,
+                      seed = 456,
+                      convergence_tolerance = 0.5,
+                      maximum_number_of_theta_updates = 10,
+                      maximum_number_of_lambda_updates = 10)
+
+gof_logged <- GERGM::GOF(model_logged, return_GERGM_Object = TRUE)
+
+```
+
+```{r Print GERGM model 2}
+# Print in a different block in case of errors in the previous one (don't want to have to repeat blocks which take a long time)
+install.packages("texreg")
+texreg::plotreg(list(model_logged, gof_logged))
+```
+
+```{r Significance of GERGM model 2}
+(EstSE_log <- rbind(t(attributes(model_logged)$theta.coef), t(attributes(model_logged)$lambda.coef)))
+
+EstSE_df_log = as.data.frame(EstSE_log)
+
+EstSE_df_log$LOWER = EstSE_df_log$est - EstSE_df_log$se*(-qnorm((1-0.95)/2))
+EstSE_df_log$UPPER = EstSE_df_log$est + EstSE_df_log$se*(-qnorm((1-0.95)/2))
+
+# If LOWER and UPPER have the same sign (positive/negative) then there's significance
+EstSE_df_log$Significant = (EstSE_df_log$LOWER > 0 & EstSE_df_log$UPPER > 0) | (EstSE_df_log$LOWER < 0 & EstSE_df_log$UPPER < 0)
+knitr::kable(texreg::matrixreg(EstSE_df_log))
+```
+
+
+These results show that all attributes except for crime are significant. This fits the earlier research much better [@belot2012cultural, @langley2016push, @windzio2018network]. It would, in fact, potentially validate hypotheses 2, 3, 4 and invalidate hypothesis 5. The resulting graphs displaying the accuracy of the simulated statistics vs. the observed statistics are, however, significantly worse than the previous model. This is true for models using both Cauchy and Log Cauchy transformations (not shown in this report). Due to the goodness of fit graphs being poor, it is not possible to use the results of this second model, which accounts for skewness. Therefore, we maintain that within OECD countries, the general attributes which are considered push-pull factors do not apply. It remains open to investigation which techniques handle skewness and result in proper goodness of fits. Furthermore, the investigation of which factors apply for push-pull migration among the OECD countries also remains open to for future research. 
+
+
+
 
 
 ## Conclusion
