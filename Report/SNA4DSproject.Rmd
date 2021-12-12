@@ -3,33 +3,28 @@ title             : "Migratory Determinants Between Member-States of the OECD"
 shorttitle        : "A SNA4DS Report"
 
 author: 
-  - name          : "First Author"
+  - name          : "R. de Bruijn"
     affiliation   : "1"
-    corresponding : yes    # Define only one corresponding author
-    address       : "Postal address"
-    email         : "my@email.com"
-    role:         # Contributorship roles (e.g., CRediT, https://casrai.org/credit/)
-      - Conceptualization
-      - Writing - Original Draft Preparation
-      - Writing - Review & Editing
-  - name          : "Ernst-August Doelle"
-    affiliation   : "1,2"
+
+  - name          : "R. Eserol"
+    affiliation   : "1"
     role:
-      - Writing - Review & Editing
+      
+  - name          : "A. Kedem"
+    affiliation   : "1"
+
+  - name          : "R. Matuz"
+    affiliation   : "1"
+  
+  - name          : "V. Meijering"
+    affiliation   : "1"
 
 affiliation:
   - id            : "1"
-    institution   : "Wilhelm-Wundt-University"
-  - id            : "2"
-    institution   : "Konstanz Business School"
-
-authornote: |
-  Add complete departmental affiliations for each author here. Each new line herein must be indented, like this line.
-
-  Enter author note here.
+    institution   : "Jheronimus Academy of Data Science"
 
 
-keywords          : "keywords"
+keywords          : "migration, cug, gergm"
 wordcount         : "X"
 
 bibliography      : ["r-references.bib"]
@@ -61,35 +56,9 @@ knitr::opts_chunk$set(cache.extra = knitr::rand_seed)
 ```
 
 
-
-# Citations in papaja, detele appropriately later
-
-Add the bibtex entry in the .bib file. You can find the entries in Google scholar, 
-but double check since it is not always correct. 
-
-Call the citations in the text:
-
-Citation within parentheses	[@R-papaja]
-
-Multiple citations	[@R-papaja; @R-base]
-
-In-text citations	@R-papaja
-
-Year only	[-@R-base]
-
-Only if your citation appears in the text it will also show up in the Reference 
-list. Don't manually modify the Reference list.
-
 ## Executive Summary 
 
-(150 words) – 0.3 POINTS
-Summarize the report. Write this as the very last thing.
-
-What is the main topic you are addressing?
-
-what are your research questions and hypotheses?  
-
-what are your results and the main conclusion?
+In this report we investigated the dynamics of international migration from the network perspective, between the member countries of the Organisation for Economic Co-operation and Development. We modelled international migration as a directed and valued network where the nodes represent countries, and the directed edges represent the number of countries migrating from one country to another in the year 2019. We tested whether this network exhibited clustering, and found an exceptionally high, statistically significant level of clustering. We investigated the factors that drive migration using a complex generalized exponential random graph model, and, contrary to our expectations based on the literature on the determinants of migration, found no significant effects of any of the covariates we included in the analysis. The only predictors of migration were the endogenous popularity and sociality effects, while reciprocity was not present. Future work from the network perspective is needed to determine the reasons behind the lack of significant covariate effects found.
 
 
 
@@ -139,153 +108,129 @@ The structure of the rest of the report is as follows. The method section explai
 ## Methodology
 
 ### Dataset 
-(about 500 words) 1 POINT (+ BONUS)
-*	Which data set are you going to use? Three options:
+The statistical analysis in this project focuses on the member countries of the Organisation for Economic Co-operation and Development (OECD). The OECD maintains a collaboration environment for various countries via the OECD council, which is set out in the OECD convention. There are currently 38 OECD countries. 
 
-o	Use readily/easily available data (0 bonus points)
+The essential network that is used in this report is obtained from the International Migration Database of the OECD (to access this, and other data sources we used, see the Table in the Appendix). Available information is inflow and outflow of foreign population by nationality for each country. Furthermore, the data is divided into one-year blocks. For this project, the migration data from the year 2019 is used, this being the last year on which data is currently available.
+In the Migration Database, every country has its own data frame for inflow and outflow. Each data frame has countries as rows and years as columns. Values that correspond to these rows and columns are the inflow/outflow of migration by/to the foreign population. However, some parts of the dataset were missing or corrupted so the authors had to remove some countries from the dataset in order to maintain an organized dataset. Therefore, the number of countries included in our analysis decreased from 38 to 27, the exact list can be found in the Appendix.
 
-o	Combine two or more existing datasets (max 0.5 bonus points)
+As covariates, we focused on borders, gross domestic product (GDP), crime rate, main religion, main language, unemployment rates, and freedom attributes for each country. For this purpose, datasets have been collected from various internet resources (see the list of links in the Appendix). A dataset on the country borders was used to create a network with the same nodes as the migration network, where undirected edges connect any two countries that share a border. The GDP and population data for this project were obtained from a Kaggle dataset, as well as the crime index. Information on the main religions and main languages were collected from Wikipedia. Unemployment rates were retrieved the website of The World Bank, and finally, the freedom index is a rating from Reporters Without Borders. 
 
-o	Scrape or collect your own data (max. 1 bonus point)
+This array of different, and often not official, sources of data is indisputably a strong limitation of the present study. The language and religion data are particularly lacking, since for ease of computation, each country was assigned only one language and one religion, which severely neglect the diversity on these facets. For example, in a country such as Switzerland, where four languages are official and widely used, only one had to be selected, the one spoken by the highest percentage of the population. In the present project it was out of scope to work with more sophisticated data, however, for reliable conclusions, future work is needed to supplement our results.
 
-*	Clearly explain where the data is coming from:
+Descriptive statistics of the covariates are presented in the table below.
 
-o	Who collected the data?
+```{r}
+covariates <- read.table("../data_final/covariates.csv", row.names = 1, sep = ";", header = TRUE)
 
-o	What is the source?
+covariates <- subset(covariates, select = -c(Area, Safety_Index))
 
-o	When was the data produced?
+is_numeric <- sapply(covariates, is.numeric)
 
-o	How was the data collected?
+bootcamp2021::betterpairs(covariates[, is_numeric])
+```
 
-*	Provide descriptive measures of your data (tables, plots, etc.)
-
-*	Why is this data useful to study your topic and answer your research questions?
-
-*	What is the potential bias in the data? How does this affect your results?
 
 ### Data analysis (Research Rationale)
+
 Research question 1 investigates the degree of clustering within the network of internal migration among OECD countries. Clustering in a network is a form of graph level index or network descriptive statistic [@butts2008social], [@cranmer2020inferential]. These types of descriptive statistics are useful for understanding attributes of a network, such as clustering, centralization, transitivity or reciprocity [@cranmer2020inferential]. The network generation process by itself does not trivially translate into a clear answer, such as "there is a high degree of clustering," which is where the conditional uniform graph (CUG) method is useful. It works by constructing a null hypothesis, or benchmark, which does not include a tendency towards the process we wish to study (meaning that the null distribution generated would not involve a high degree of clustering). This null distribution creation is often created through the use of Monte Carlo distributions, and ensures this benchmark that can be tested against [@butts2008social].  
 
-Research question 2 investigates which factors drive migration between the OECD countries. Several papers have been published using GERGMs to explain migratory patterns, but these focus on refugees [@abramski2019network] or intra-national migration [@aksoy2020model]. On the other hand, it is more common in literature to use ERGMs to study both international and intra-national migration [@windzio2021network], [@nourpanah2018intersecting], [@belkhiria2019application]. At the time of writing, the Google Scholar search results for "GERGM migration" number 23, whereas "ERGM migration" numbers 739. While this is not completely accurate because it is an unsupervised search result, it does provide an indication. It is our wish to expand on literature and test the robustness of the GERGM model. The ERGM and GERGM both evaluate endogenous and exogenous factors, but the ERGM does not allow for valued edges, whereas the GERGM does. Patterns of migration among countries are not binary, and investigating how the values of migration between countries affects the overall migration network could be beneficial in understanding migratory patterns, and shed light upon factors not previously found. 
-
-
+Research question 2 investigates which factors drive migration between the OECD countries. Several papers have been published using GERGMs to explain migratory patterns, but these focus on refugees [@abramski2019network] or intra-national migration [@aksoy2020model]. On the other hand, it is more common in literature to use ERGMs to study both international and intra-national migration [@windzio2021network], [@nourpanah2018intersecting], [@belkhiria2019application]. At the time of writing, the Google Scholar search results for "GERGM migration" number 23, whereas "ERGM migration" numbers 739. While this is not completely accurate because it is an unsupervised search result, it does provide an indication. It is our wish to expand on literature and test the robustness of the available findings with the GERGM model. The ERGM and GERGM both evaluate endogenous and exogenous factors, but the ERGM does not allow for valued edges, whereas the GERGM does. Patterns of migration among countries are not binary, and investigating how the values of migration between countries affects the overall migration network could be beneficial in understanding migratory patterns, and shed light upon factors not previously found. 
 
 
 ## Results
-(about 2000 words)
 
-### Model 1
-(about 1000 words) – 2.5 POINTS
+### Model 1: CUG
 
-*	Present your results appropriately (plots, tables…) and discuss your findings 
-in plain English
+*Clustering in weighted networks*
 
-*	Discuss the meaning of your findings in relation to your hypothesis. (half of
-the points evaluated in this other part)
+In order to understand the attributes of the network of internal migration among OECD countries, we investigate the degree of clustering within the network. The global clustering coefficient – often called transitivity - is a network-level measure that in its original form cannot be applied to weighted networks. A generalization has been proposed by @opsahl2009clustering, and this is the algorithm we are using in this report. 
 
+The method investigates the degree to which nodes appear to be clustered together and it
+can be applied to both directed and undirected networks. Evidence indicates that in real-world interpretations of networks, particularly in social networks, nodes appear to create “tightly knit groups” that act by a “relatively high density of ties” [@opsahl2009clustering]. Real-world networks, this probability appears to be above the average likelihood of a tie that is randomly formed between two nodes. The global clustering coefficients approach focuses on triplets of nodes, three nodes that are connected by two or three undirected ties is called a triplet, and their value can be calculated in one of four ways: arithmetic mean, geometric mean, the maximum or the minimum of the edges constituting the triplet [@odopsahl2009clustering].
 
-```{r echo = FALSE, results = 'asis'}
-# table example
-cn <- c("age", "gender", "eyes_col")
-one <- c(7, "M", "BLUE")
-two <- c(8, "F", "BROWN")
-three <- c(8, "M", "GREEN")
-four <- c(7, "F", "PINK")
+In our work, global clustering coefficients were examined for the network of international migration among OECD countries. We chose to report on results with the method of geometric mean value, as this is the least sensitive to extreme values. Nonetheless, the analyses have been conducted, and all the results hold with all other methods of calculating the global clustering coefficient in weighted networks as well. The observed value for the migration network is 0.989, whose significance was then tested using a CUG test.
 
-tab <- rbind(cn, one, two, three, four)
-rownames(tab) <- NULL
-knitr::kable(tab)
+*CUG test*
+
+It is generally beneficial to compare observed index values in contrast to those which would be accessed by a baseline model with acknowledged substantive properties for the evaluation of graph-level indices [@butts2008social]. Within the consideration of the extent and the direction of derivation for each index from its baseline distributions, the presence of structural biases can be detected, which may provide convenient information about the mechanisms underlying the data [@butts2008social]. The Conditional Uniform Graph (CUG) distribution is one of the important baseline models for network data [@butts2008social]. One of the most important uses of this method is the CUG test procedure. The CUG test is a method that is applied to a hypothesis for an observed statistic. In our case, the observed statistics were the results of the clustering process. The hypothesis is that there is a high degree of clustering in the data. In order to investigate this hypothesis, we performed a CUG test for the clustering coefficient with 1000 iterations.
+
+Since the implementation of the clustering coefficient for weighted graphs by [@odopsahl2009clustering] operates on edge-lists with integer-named nodes, this function was not suitable for calling within the function implementing the CUG test in the R package SNA, as this latter operates on network objects or adjacency matrices. Therefore, our implementation starts with defining a function that converts an adjacency matrix into an edge list, calls the clustering function on this matrix, and returns the clusteredness score.
+
+```{r}
+# Load data
+
+migration <- as.matrix(read.table("../data_final/migration_adjacency_matrix.csv", sep = ";", row.names = 1, header = TRUE))
 ```
 
-Option 1: 
+```{r}
+# Function for creating edge list from adjacency matrix and calculating the clustering coefficient
 
-```{r model 1, echo = FALSE}
-# model results display example
-ctl <- c(4.17,5.58,5.18,6.11,4.50,4.61,5.17,4.53,5.33,5.14)
-trt <- c(4.81,4.17,4.41,3.59,5.87,3.83,6.03,4.89,4.32,4.69)
-group <- gl(2, 10, 20, labels = c("Ctl","Trt"))
-weight <- c(ctl, trt)
-lm.D9 <- lm(weight ~ group)
-lm.D90 <- lm(weight ~ group - 1)
+clustering_function <- function(dat) {
+  
+    edge_list <- matrix(0, (nrow(dat) * nrow(dat)), 3)
 
-# install.packages("texreg")
+    for(row in 1:NROW(dat))
+    {
+      for(column in 1:NROW(dat))
+      {
+        
+      edge_list[(row-1)*nrow(dat) + column, 1] <- row
+      edge_list[(row-1)*nrow(dat) + column, 2] <- column
+      edge_list[(row-1)*nrow(dat) + column, 3] <- dat[row, column]
+      }
+    }
+    
+    # Find clustering coefficient
 
-knitr::kable(texreg::matrixreg(lm.D9))
+    cc <- tnet::clustering_w(edge_list, measure=c("bi", "am", "gm", "ma", "mi"))
 
-
-```
-
-Option 2
-
-```{r model 2, echo = FALSE, results = 'asis'}
-# model results display example
-ctl <- c(4.17,5.58,5.18,6.11,4.50,4.61,5.17,4.53,5.33,5.14)
-trt <- c(4.81,4.17,4.41,3.59,5.87,3.83,6.03,4.89,4.32,4.69)
-group <- gl(2, 10, 20, labels = c("Ctl","Trt"))
-weight <- c(ctl, trt)
-lm.D9 <- lm(weight ~ group)
-lm.D90 <- lm(weight ~ group - 1)
-
-# install.packages("texreg")
-
-knitr::kable(texreg::matrixreg(list(lm.D9, lm.D90)))
+    # Here I'm returning the geometric mean value
+    
+    cc[[3]]
+}
 
 
 ```
 
+```{r}
+# Run the CUG test
 
-Option 3
+suppressWarnings(
+ 
+   
+cug <- sna::cug.test(dat=migration, 
+                    FUN=clustering_function, 
+                    mode="digraph",
+                    ignore.eval=FALSE,
+                    reps=1000) # default is 1000
 
-```{r model 3, echo = FALSE}
-# model results display example
-ctl <- c(4.17,5.58,5.18,6.11,4.50,4.61,5.17,4.53,5.33,5.14)
-trt <- c(4.81,4.17,4.41,3.59,5.87,3.83,6.03,4.89,4.32,4.69)
-group <- gl(2, 10, 20, labels = c("Ctl","Trt"))
-weight <- c(ctl, trt)
-lm.D9 <- lm(weight ~ group)
-lm.D90 <- lm(weight ~ group - 1)
+)
 
-# install.packages("texreg")
-
-
-texreg::plotreg(lm.D9)
-
+print(cug)
 
 ```
 
 
-Option 4
+```{r}
+# Plot the CUG test
 
-```{r model 4, echo = FALSE}
-# model results display example
-ctl <- c(4.17,5.58,5.18,6.11,4.50,4.61,5.17,4.53,5.33,5.14)
-trt <- c(4.81,4.17,4.41,3.59,5.87,3.83,6.03,4.89,4.32,4.69)
-group <- gl(2, 10, 20, labels = c("Ctl","Trt"))
-weight <- c(ctl, trt)
-lm.D9 <- lm(weight ~ group)
-lm.D90 <- lm(weight ~ group - 1)
-
-# install.packages("texreg")
-
-texreg::plotreg(list(lm.D9, lm.D90))
-
+plot(cug)
 ```
 
 
+The figure above presents the outcome of the CUG test. The results are in line with Hypothesis 1, showing that there is a high degree of clustering in this network, more than what is expected of a network with similar measures. The measured clustering coefficient is much higher than any of the coefficients in any of the simulated 1000 networks. This indicates that the test resulted with the confirmation of the hypothesis. 
 
-### ERGM 
-(about 1000) – 2.5 POINTS
 
-As discussed earlier in the report, we use a GERGM in order to be able to use weights on the edges in the network. The following covariates are considered: population, population density, GDP, crime index, freedom index, unemployment index, language, borders. Other factors of the GERGM include the edges, in2stars, out2stars, and mutual. The in2stars attribute reflects popularity within a network, out2stars reflects sociality, and mutual reflects reciprocity. 
 
-Several models were tested, but only two of them are investigated in this report. 
+### Model 2: GERGM 
 
-The first model takes the data how it is, using directed edge values between nodes as the number of migrations between the countries. Furthermore, each country has sender and receiver values of population, population density, GDP, crime index, freedom index, unemployment index. The language, the religion, the borders and the in2stars, out2stars, and mutual are also inputs. As such, both endogenous and exogenous factors are tested for. 
+As discussed earlier in the report, we use a GERGM, which allows for accommodating weights on the edges in the network. The following covariates are considered: population, population density, GDP, crime index, freedom index, unemployment index, language, and borders. While originally we also aimed to include religion as is has been shown to be a key factor related to migration[@belot2012cultural], our data for the countries remaining in the analysis did not have enough variance on this factor to include it in the model. The covariates showed high correlations as shown in the Data Section of this report, but including them simultaneously did not appear to negatively affect model fits. Methods for calculating variance inflation factors to detect multicollinearity have been implemented for ERGMs [@duxbury2021diagnosing] but not yet for GERGMs, these are therefore unknown. 
 
-#### Model 1
+Since GERGMs allow for including endogenous dependencies in the model, we opted for including a number of these as well. Our CUG test results show that the network exhibits a high degree of clustering, suggesting that triads are an interesting metrics to examine. Including transitive or cyclic triads, however, made the model unable to converge, even when utilizing alpha weighting to avoid degeneracy in the model. Our final model included only the remaining three endogenous dependencies implemented in the GERGM package: mutual, which reflects transitivity in the network; in2stars, which reflect popularity of nodes; and out2stars, reflecting sociality of nodes, as their likelihood of sending multiple outgoing edges.
+
+The model uses directed edge values between nodes as the number of migrations between the countries. Since the distribution of edges is highly skewed, weights are estimated with a Cauchy distribution.The estimations are done using 500,000 iterations of Markov chain Monte Carlo with the Metropolis-Hastings algorithm, with a burn-in of 10,000 iterations.
+
 ```{r GERGM model 1}
-# Import data
 covariates <- read.table("../data_final/covariates.csv", row.names = 1, sep = ";", header = TRUE)
 borders <- as.matrix(read.table("../data_final/borders_adjacency_matrix.csv",sep = ";", row.names = 1, header = TRUE))
 migration <- as.matrix(read.table("../data_final/migration_adjacency_matrix.csv", sep = ";", row.names = 1, header = TRUE))
@@ -293,7 +238,7 @@ migration <- as.matrix(read.table("../data_final/migration_adjacency_matrix.csv"
 
 formula <- migration ~ 
                         edges + 
-                        sender("Population") + 
+                        sender("Population") +
                         receiver("Population") +
                         sender("Population_Density") +
                         receiver("Population_Density") +
@@ -314,24 +259,32 @@ formula <- migration ~
 
 model <- GERGM::gergm(formula,
                       covariate_data = covariates,
-                      number_of_networks_to_simulate = 400000,
+                      number_of_networks_to_simulate = 500000,
                       thin = 1/100,
                       proposal_variance = 0.05,
                       MCMC_burnin = 10000,
                       seed = 456,
-                      convergence_tolerance = 0.5,
-                      maximum_number_of_theta_updates = 10,
-                      maximum_number_of_lambda_updates = 10)
+                      convergence_tolerance = 0.1,
+                      transformation_type = "Cauchy",
+                      verbose = FALSE,
+                      generate_plots = FALSE)
 
 gof <- GERGM::GOF(model, return_GERGM_Object = TRUE)
 
 ```
 
 ```{r Print GERGM model 1}
-# Print in a different block in case of errors in the previous one (don't want to have to repeat blocks which take a long time)
-install.packages("texreg")
-texreg::plotreg(list(model, gof))
+# Generate Trace Plot
+GERGM::Trace_Plot(model)
 ```
+
+
+```{r}
+# Generate GOF Plot
+GERGM::GOF(model)
+```
+
+
 
 ```{r Significance of GERGM model 1}
 # Check for significance
@@ -343,117 +296,37 @@ EstSE_df$UPPER = EstSE_df$est + EstSE_df$se*(-qnorm((1-0.95)/2))
 
 # If LOWER and UPPER have the same sign (positive/negative) then there's significance
 EstSE_df$Significant = (EstSE_df$LOWER > 0 & EstSE_df$UPPER > 0) | (EstSE_df$LOWER < 0 & EstSE_df$UPPER < 0)
-knitr::kable(texreg::matrixreg(EstSE_df)) # TODO check the right function in this table
+
+EstSE_df <- subset(EstSE_df, select = -c(LOWER, UPPER))
+
+knitr::kable(EstSE_df)
 
 ```
 
-The resulting model has the observed and simulated statistics as quite similar to each other, as can be seen in the goodness of fit plots. However, none of the attributes other than in2stars, out2stars, the intercept and dispersion are significant. This implies that Hypotheses 2, 3, 4 do not hold, and Hypothesis 5 does. This does not fit with the earlier research results of @belot2012cultural, @langley2016push and @windzio2018network, who find that each of these factors is significant. This is surprising because the simulated does fit well with the observed one, which seems to imply that our results would be similar to previously found ones in the literature. It may be caused by an unresolved high level of skewness in the data, as is shown below. To attempt to resolve this, model 2 is introduced in the Model 2 sub-section.
 
-```{r Skewness}
-h <- hist(migration, breaks = 100)
+The trace plot shows an acceptable level of convergence, and the goodness of fit plots display that the resulting model has the observed and simulated statistics as quite similar to each other. However, as displayed in the table above, none of the attributes other than in2stars, out2stars, the intercept and dispersion are significant. This implies that Hypotheses 2, 3, 4 do not hold, and Hypothesis 5 does. This does not fit with the earlier research results of @belot2012cultural, @langley2016push and @windzio2018network, who find that each of these factors is significant. 
 
-xfit <- seq(min(migration), max(migration), length = 40)
-yfit <- VaRES::dlogcauchy(xfit, mu=0, sigma=1, log=FALSE)
-ayfit <- yfit * diff(h$mids[1:2]) * length(migration)
+In this model, in2stars and out2stars are significant, which indicates that there are unmodelled features of countries that influence migration flows to and from each country. Popularity and sociality exist to a significant degree in the network; e.g., if a country is sending emigrants to one country, it is likely to send more to other countries too; and if a country receives many immigrants from one country, it likely receives many from other countries too. In line with our Hypothesis 5 based on earlier studies, reciprocity is not significant, meaning that a country receiving many immigrants from another country does not predict this other country receiving a high number of migrants back from that country.
 
-textreg::plotreg(lines(xfit, yfit, col = "red", lwd = 2))
-```
+These results suggest that within the OECD countries, population size, population density, GDP, crime, freedom, unemployment are not push-pull factors in migration (Hypotheses 2, 3). The OECD countries are countries that are relatively well-off and generally viewed as the "first-world"; modern, industrial countries. Previous research has focused on migration primarily in the form of refugees, or where one side of the migration is better off than the other side in aspects such as GDP, freedom, or crime, or others investigated. The range within the OECD countries on these attributes do not go to the extremes, which could be an explanation for why these factors are not significant motivators of migration within the network of observed countries. 
 
-For the first model, in2stars and out2stars are significant, which indicates that other factors that we did not account for are significant in simulating the network. Popularity and sociality, which are endogenous to the network, are therefore significant factors. This can be interpreted as meaning that popularity and sociality exist to a significant degree in the network; e.g., some countries are more likely to take in immigrants, while others are more likely to send out emigrants. As mutual—or reciprocity—is not a significant attribute, it means that countries do not equally share migration streams between each other. 
+Language, and borders are not significant within OECD countries either (Hypothesis 4). This might be related to the fact that most of the countries investigated do not border each other or share a common language. Having a shared language or border does not appear to significantly affect migration, there are therefore other factors which encourage migration more. Perhaps these factors are personal and relatively unique to individuals who migrate within OECD countries, such as job opportunities which are not readily available within their own countries, or the wish to live in a more popular country. 
 
-These results suggest that within the OECD countries, population size, population density, GDP, crime, freedom, unemployment are not push-pull factors in migration (Hypotheses 2, 3). The OECD countries are countries that are relatively well-off and generally viewed as the "first-world"; modern, industrial countries. Previous research has focused on migration primarily in the form of refugees, or where one side of the migration is better off than the other side in aspects such as GDP, freedom, or crime, or others investigated. Most of the countries within the OECD do not differ too greatly in these attributes, which could be an explanation for why these factors are not significant motivators of migration within the network of observed countries. <!-- TODO check this last sentence, check variance level of these attributes -->
+It is quite remarkable that none of the investigated factors contribute significantly to migration. The significant popularity and sociality effects indicate that there are trends in the migration patterns, perhaps further detailing the covariates included in the analysis and controlling for more factors could result in better insights into the determinants of migration. However, since the outgoing edges of migrants were not scaled to the population of the sending country, it is possible that these effects occur partially only due to the imbalanced population sizes of the countries in the network.
+Our study was limited by a small sample size of only a subset of the OECD countries, and only looking at one specific year. Our results might be due to these limitations, or to generally different dynamics of migration amongst OECD countries than the groups of countries previously studied.
+Another way to explain our differing findings is the new and different method we used for testing our hypotheses. Since GERGMs are suitable for modelling interconnected and interdependent countries, it is possible that earlier results have been biased because of methods that oversimplified the problem, or methods whose assumptions were violated by migration datasets. Since, however, many factors that we failed to find have been quite robustly established in the literature, a number of further studies would be necessary to confirm these claims.
 
-Language, religion, and borders are not significant within OECD countries either (Hypothesis 4). This could be explained by the fact that most of the countries investigated do not border each other or share a common language. It further suggests that having a shared language or religion does not significantly affect migration either. There are therefore other factors which are more encouraging for migration to happen. Perhaps these factors are personal and relatively unique to individuals who migrate within OECD countries, such as job opportunities which are not readily available within their own countries, or the wish to live in a more popular country. 
-
-It is somewhat confounding that none of the investigated factors contribute significantly to migration. Some countries have more immigration (popularity) and others have more emigration (sociality) which suggests that there is a cause for these trends in migration. In an attempt to investigate whether these factors may indeed be significant, we introduce the second model.
-
-#### Model 2
-@abramski2020complex performed similar research on inter-country migration, and decided that, due to a high degree of skewness in the data, to log the population and GDP, as well as the edge values. Then, instead of the default Cauchy distribution, Log Cauchy is used. In an attempt to find if some attributes may be significant, we investigate this path as well. 
-
-```{r GERGM model 2}
-covariates_logged <- data.frame(covariates)
-covariates_logged$Population <- log(covariates_logged$Population)
-covariates_logged$GDP <- log(covariates_logged$GDP)
-migration_logged <- log(migration)
-migration_logged[migration_logged == -Inf] <- 0.01
-
-formula_logged <- migration_logged ~ 
-                        edges + 
-                        sender("Population") + 
-                        receiver("Population") +
-                        sender("Population_Density") +
-                        receiver("Population_Density") +
-                        sender("GDP") +
-                        receiver("GDP") +
-                        sender("Crime_Index") +
-                        receiver("Crime_Index") +
-                        sender("Freedom_2020") +
-                        receiver("Freedom_2020") +
-                        sender("Unemployment_2020") +
-                        receiver("Unemployment_2020") +
-                        nodematch("Religion") +
-                        netcov(borders) +
-                        in2stars(alpha = 0.8) +
-                        out2stars(alpha = 0.8) +
-                        mutual(alpha = 0.8)
-
-model_logged <- GERGM::gergm(formula_logged,
-                      covariate_data = covariates_logged,
-                      number_of_networks_to_simulate = 100000,
-                      thin = 1/100,
-                      proposal_variance = 0.05,
-                      MCMC_burnin = 10000,
-                      transformation_type = "LogCauchy",
-                      # hyperparameter_optimization = TRUE,
-                      seed = 456,
-                      convergence_tolerance = 0.5,
-                      maximum_number_of_theta_updates = 10,
-                      maximum_number_of_lambda_updates = 10)
-
-gof_logged <- GERGM::GOF(model_logged, return_GERGM_Object = TRUE)
-
-```
-
-```{r Print GERGM model 2}
-# Print in a different block in case of errors in the previous one (don't want to have to repeat blocks which take a long time)
-install.packages("texreg")
-texreg::plotreg(list(model_logged, gof_logged))
-```
-
-```{r Significance of GERGM model 2}
-(EstSE_log <- rbind(t(attributes(model_logged)$theta.coef), t(attributes(model_logged)$lambda.coef)))
-
-EstSE_df_log = as.data.frame(EstSE_log)
-
-EstSE_df_log$LOWER = EstSE_df_log$est - EstSE_df_log$se*(-qnorm((1-0.95)/2))
-EstSE_df_log$UPPER = EstSE_df_log$est + EstSE_df_log$se*(-qnorm((1-0.95)/2))
-
-# If LOWER and UPPER have the same sign (positive/negative) then there's significance
-EstSE_df_log$Significant = (EstSE_df_log$LOWER > 0 & EstSE_df_log$UPPER > 0) | (EstSE_df_log$LOWER < 0 & EstSE_df_log$UPPER < 0)
-knitr::kable(texreg::matrixreg(EstSE_df_log))
-```
-
-
-These results show that all attributes except for crime are significant. This fits the earlier research much better [@belot2012cultural, @langley2016push, @windzio2018network]. It would, in fact, potentially validate hypotheses 2, 3, 4 and invalidate hypothesis 5. The resulting graphs displaying the accuracy of the simulated statistics vs. the observed statistics are, however, significantly worse than the previous model. This is true for models using both Cauchy and Log Cauchy transformations (not shown in this report). Due to the goodness of fit graphs being poor, it is not possible to use the results of this second model, which accounts for skewness. Therefore, we maintain that within OECD countries, the general attributes which are considered push-pull factors do not apply. It remains open to investigation which techniques handle skewness and result in proper goodness of fits. Furthermore, the investigation of which factors apply for push-pull migration among the OECD countries also remains open to for future research. 
-
-
+Our specific way of modeling the data might have also affected the outcomes negatively. The migration data is highly skewed, and while the Cauchy distribution is able to handle somewhat skewed distributions, in some studies the authors opt for log-transforming all edge values, see @abramski2018network for an example. In our data, there is also a large variance in the ranges and variances of the covariates. Log-transforming these variables or using z-scores are also frequently taken measures to make the data easier to handle for the models. However, through trying many combinations of the above-mentioned transformations, most versions of the data did not lead to converging models. In addition, while some of these models did converge and confirmed our hypotheses based on the significance values, their diagnostic and goodness-of-fit plots still showed that they were inferior to our model presented above, see an example of such models in the Appendix.
 
 
 
 ## Conclusion
 
-(about 350 words) – 0.7 POINTS
-What were your topic and research questions again? (1 sentence)
+The aim of our report was to investigate the migration network of the OECD countries. We modelled international migration as a directed and valued network where the nodes represent countries, and the directed edges represent the number of countries migrating from one country to another in the year 2019. We tested whether this network exhibited clustering, and found an exceptionally high, statistically significant level of clustering. We investigated the factors that drive migration through a complex GERGM and found no significant effect of any of the covariates we included in the analysis, the only predictors of migration were the endogenous popularity and sociality effects. 
 
-What did you learn from the two analysis you run? *** most important point to 
-address 0.5 POINTS here
+Being unable to confirm our hypotheses about the push and pull factors of international migration might have resulted form our limited data, uncommon patterns of migration amongst OECD countries, or the strictness of the GERGM method. We observed that while migration flows between countries naturally constitute a network, when examining a problem like this, there are still decisions to be made on how to represent the data, especially relating to the scaling of the covariates and the edge weights. 
 
-Who benefits from your findings?
-
-What does remain an open problem?
-
-Can you give suggestions for future work in this area?
-
+Our contribution has been to examine the topic of international migration from the network perspective. We would like to promote the use of GERGMs for future use in this field, as it provides a suitable method, accounting for the unique characteristics of such data. Future work is called to focus on the factors determining migration that have been missed or misrepresented due to incomplete data in this study, and to examine whether the dynamics of international migration differ between the OECD countries and other sets of countries.
 
 
 \newpage
@@ -466,3 +339,93 @@ Can you give suggestions for future work in this area?
 
 <div id="refs" custom-style="Bibliography"></div>
 \endgroup
+
+
+
+# Appendix
+
+*List of countries included in the analysis*
+
+```{r}
+knitr::kable(rownames(migration))
+```
+
+*Sources of data*
+
+```{r}
+data_sources <- read.table("data_sources.csv", sep = ",", row.names = 1, header = TRUE)
+knitr::kable(data_sources)
+```
+
+
+*Second GERGM with log-trasformed edge weights, population and GDP*
+
+```{r GERGM model 2}
+covariates_logged <- data.frame(covariates)
+covariates_logged$Population <- log(covariates_logged$Population)
+covariates_logged$GDP <- log(covariates_logged$GDP)
+migration_logged <- log(migration)
+migration_logged[migration_logged == -Inf] <- 0.01
+migration_logged[migration_logged == 0] <- 0.01
+
+formula_logged <- migration_logged ~
+                        edges +
+                        sender("Population") +
+                        receiver("Population") +
+                        sender("Population_Density") +
+                        receiver("Population_Density") +
+                        sender("GDP") +
+                        receiver("GDP") +
+                        sender("Crime_Index") +
+                        receiver("Crime_Index") +
+                        sender("Freedom_2020") +
+                        receiver("Freedom_2020") +
+                        sender("Unemployment_2020") +
+                        receiver("Unemployment_2020") +
+                        nodematch("Language") +
+                        netcov(borders) +
+                        in2stars(alpha = 0.8) +
+                        out2stars(alpha = 0.8) +
+                        mutual(alpha = 0.8)
+
+model_logged <- GERGM::gergm(formula_logged,
+                      covariate_data = covariates_logged,
+                      number_of_networks_to_simulate = 500000,
+                      thin = 1/100,
+                      proposal_variance = 0.05,
+                      MCMC_burnin = 10000,
+                      transformation_type = "LogCauchy",
+                      seed = 456,
+                      convergence_tolerance = 0.1)
+
+gof_logged <- GERGM::GOF(model_logged, return_GERGM_Object = TRUE)
+
+```
+
+```{r Print GERGM model 2}
+# Generate Trace Plot
+# GERGM::Trace_Plot(model_logged)
+```
+
+
+```{r}
+# Generate GOF Plot
+# GERGM::GOF(model_logged)
+```
+
+```{r Significance of GERGM model 2}
+# (EstSE_log <- rbind(t(attributes(model_logged)$theta.coef), t(attributes(model_logged)$lambda.coef)))
+# 
+# EstSE_df_log = as.data.frame(EstSE_log)
+# 
+# EstSE_df_log$LOWER = EstSE_df_log$est - EstSE_df_log$se*(-qnorm((1-0.95)/2))
+# EstSE_df_log$UPPER = EstSE_df_log$est + EstSE_df_log$se*(-qnorm((1-0.95)/2))
+# 
+# # If LOWER and UPPER have the same sign (positive/negative) then there's significance
+# EstSE_df_log$Significant = (EstSE_df_log$LOWER > 0 & EstSE_df_log$UPPER > 0) | (EstSE_df_log$LOWER < 0 & EstSE_df_log$UPPER < 0)
+# 
+# EstSE_df <- subset(EstSE_df, select = -c(LOWER, UPPER))
+# 
+# knitr::kable(EstSE_df)
+```
+
