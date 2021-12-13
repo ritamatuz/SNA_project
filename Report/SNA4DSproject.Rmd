@@ -64,13 +64,13 @@ In this report we investigated the dynamics of international migration from the 
 
 ## Introduction 
 
-### Determinants of international migration
+### Determinants of International Migration
 
 International migration is an important feature of global economy, continuously shaping the demographics of our globalized world. It is predicted that international migration is likely to grow and become more complex in the coming decades, due to factors such as an aging population, growing economic inequalities and climate change [@klugman2009human]. As it has an impact on receiving as well as sending countries, researching why people migrate, how they choose their destination countries, and how this migration changes over time are important to better understand global trends and inform policy decisions.
 
 One of the classical methods for investigating the determinants of migration are gravity models [@boyle2014exploring], their main components are population size and geographical proximity. There are more factors that influence migration according to the available literature, and these are typically grouped in two categories: push and pull factors [@langley2016push]. Push factors are those associated with the country of origin of the migrant and are related to their decision to migrate, examples of these are natural disasters, violence, poverty, and unemployment. Pull factors are associated with the destination country of the migrant, these can be economic prosperity and employment opportunities, favourable climate, and political stability. Migration movements can also be encouraged by homophily in the dominant religion and language, which lower the expected costs of acculturation [@belot2012cultural]. 
 
-### Network perspective
+### Network Perspective
 
 The flows of international migration naturally constitute a directed and valued network where nodes represent countries. The outbound edges are the number of citizens each country sends to every other country in the network, this way the inbound edges of a node represent the number of citizens received from each country. Characteristics describing the nodes and the edges between them can be included as covariates.
 
@@ -80,7 +80,7 @@ An example of a study that looks at international migration from a network persp
 
 The generalized exponential random graph model (GERGM), developed by @desmarais2012statistical, is a method that generalizes ERGMS to be used for value-edged networks, making it suitable for studying migration networks. @desmarais2012statistical used GERGMs to model interstate migration flows within the United States, and @abramski2018network used the method to study refugee migration flows from four countries experiencing violent conflicts, finding that the GERGM is a better way for modelling this specific problem compared to the ERGM.
 
-### Our research
+### Our Research
 
 In this report, we aim to contribute to the literature on international migration by examining it from a network perspective using generalized random graph models. Using a dataset of migration flows within the member countries of the Organization for Economic Co-operation and Development (OECD) in 2019, we look at the properties of this network and set up a model on the determinants of international migration.
 
@@ -119,8 +119,8 @@ This array of different, and often not official, sources of data is indisputably
 
 Descriptive statistics of the covariates are presented in the table below.
 
-```{r}
-covariates <- read.table("../data_final/covariates.csv", row.names = 1, sep = ";", header = TRUE)
+```{r, echo = FALSE}
+covariates <- read.table("./data/covariates.csv", row.names = 1, sep = ";", header = TRUE)
 
 covariates <- subset(covariates, select = -c(Area, Safety_Index))
 
@@ -130,7 +130,7 @@ bootcamp2021::betterpairs(covariates[, is_numeric])
 ```
 
 
-### Data analysis (Research Rationale)
+### Research Rationale
 
 Research question 1 investigates the degree of clustering within the network of internal migration among OECD countries. Clustering in a network is a form of graph level index or network descriptive statistic [@butts2008social], [@cranmer2020inferential]. These types of descriptive statistics are useful for understanding attributes of a network, such as clustering, centralization, transitivity or reciprocity [@cranmer2020inferential]. The network generation process by itself does not trivially translate into a clear answer, such as "there is a high degree of clustering," which is where the conditional uniform graph (CUG) method is useful. It works by constructing a null hypothesis, or benchmark, which does not include a tendency towards the process we wish to study (meaning that the null distribution generated would not involve a high degree of clustering). This null distribution creation is often created through the use of Monte Carlo distributions, and ensures this benchmark that can be tested against [@butts2008social].  
 
@@ -141,28 +141,28 @@ Research question 2 investigates which factors drive migration between the OECD 
 
 ### Model 1: CUG
 
-*Clustering in weighted networks*
+**Clustering in weighted networks**
 
 In order to understand the attributes of the network of internal migration among OECD countries, we investigate the degree of clustering within the network. The global clustering coefficient – often called transitivity - is a network-level measure that in its original form cannot be applied to weighted networks. A generalization has been proposed by @opsahl2009clustering, and this is the algorithm we are using in this report. 
 
 The method investigates the degree to which nodes appear to be clustered together and it
-can be applied to both directed and undirected networks. Evidence indicates that in real-world interpretations of networks, particularly in social networks, nodes appear to create “tightly knit groups” that act by a “relatively high density of ties” [@opsahl2009clustering]. Real-world networks, this probability appears to be above the average likelihood of a tie that is randomly formed between two nodes. The global clustering coefficients approach focuses on triplets of nodes, three nodes that are connected by two or three undirected ties is called a triplet, and their value can be calculated in one of four ways: arithmetic mean, geometric mean, the maximum or the minimum of the edges constituting the triplet [@odopsahl2009clustering].
+can be applied to both directed and undirected networks. Evidence indicates that in real-world interpretations of networks, particularly in social networks, nodes appear to create “tightly knit groups” that act by a “relatively high density of ties” [@opsahl2009clustering]. Real-world networks, this probability appears to be above the average likelihood of a tie that is randomly formed between two nodes. The global clustering coefficients approach focuses on triplets of nodes, three nodes that are connected by two or three undirected ties is called a triplet, and their value can be calculated in one of four ways: arithmetic mean, geometric mean, the maximum or the minimum of the edges constituting the triplet [@opsahl2009clustering].
 
 In our work, global clustering coefficients were examined for the network of international migration among OECD countries. We chose to report on results with the method of geometric mean value, as this is the least sensitive to extreme values. Nonetheless, the analyses have been conducted, and all the results hold with all other methods of calculating the global clustering coefficient in weighted networks as well. The observed value for the migration network is 0.989, whose significance was then tested using a CUG test.
 
-*CUG test*
+**CUG test**
 
 It is generally beneficial to compare observed index values in contrast to those which would be accessed by a baseline model with acknowledged substantive properties for the evaluation of graph-level indices [@butts2008social]. Within the consideration of the extent and the direction of derivation for each index from its baseline distributions, the presence of structural biases can be detected, which may provide convenient information about the mechanisms underlying the data [@butts2008social]. The Conditional Uniform Graph (CUG) distribution is one of the important baseline models for network data [@butts2008social]. One of the most important uses of this method is the CUG test procedure. The CUG test is a method that is applied to a hypothesis for an observed statistic. In our case, the observed statistics were the results of the clustering process. The hypothesis is that there is a high degree of clustering in the data. In order to investigate this hypothesis, we performed a CUG test for the clustering coefficient with 1000 iterations.
 
-Since the implementation of the clustering coefficient for weighted graphs by [@odopsahl2009clustering] operates on edge-lists with integer-named nodes, this function was not suitable for calling within the function implementing the CUG test in the R package SNA, as this latter operates on network objects or adjacency matrices. Therefore, our implementation starts with defining a function that converts an adjacency matrix into an edge list, calls the clustering function on this matrix, and returns the clusteredness score.
+Since the implementation of the clustering coefficient for weighted graphs by [@opsahl2009clustering] operates on edge-lists with integer-named nodes, this function was not suitable for calling within the function implementing the CUG test in the R package SNA, as this latter operates on network objects or adjacency matrices. Therefore, our implementation starts with defining a function that converts an adjacency matrix into an edge list, calls the clustering function on this matrix, and returns the clusteredness score.
 
-```{r}
+```{r, echo = FALSE}
 # Load data
 
-migration <- as.matrix(read.table("../data_final/migration_adjacency_matrix.csv", sep = ";", row.names = 1, header = TRUE))
+migration <- as.matrix(read.table("./data/migration_adjacency_matrix.csv", sep = ";", row.names = 1, header = TRUE))
 ```
 
-```{r}
+```{r, echo = FALSE}
 # Function for creating edge list from adjacency matrix and calculating the clustering coefficient
 
 clustering_function <- function(dat) {
@@ -192,7 +192,7 @@ clustering_function <- function(dat) {
 
 ```
 
-```{r}
+```{r, echo = FALSE}
 # Run the CUG test
 
 suppressWarnings(
@@ -211,7 +211,7 @@ print(cug)
 ```
 
 
-```{r}
+```{r, echo = FALSE}
 # Plot the CUG test
 
 plot(cug)
@@ -230,10 +230,10 @@ Since GERGMs allow for including endogenous dependencies in the model, we opted 
 
 The model uses directed edge values between nodes as the number of migrations between the countries. Since the distribution of edges is highly skewed, weights are estimated with a Cauchy distribution.The estimations are done using 500,000 iterations of Markov chain Monte Carlo with the Metropolis-Hastings algorithm, with a burn-in of 10,000 iterations.
 
-```{r GERGM model 1}
-covariates <- read.table("../data_final/covariates.csv", row.names = 1, sep = ";", header = TRUE)
-borders <- as.matrix(read.table("../data_final/borders_adjacency_matrix.csv",sep = ";", row.names = 1, header = TRUE))
-migration <- as.matrix(read.table("../data_final/migration_adjacency_matrix.csv", sep = ";", row.names = 1, header = TRUE))
+```{r GERGM model 1, echo = FALSE, message = FALSE}
+covariates <- read.table("./data/covariates.csv", row.names = 1, sep = ";", header = TRUE)
+borders <- as.matrix(read.table("./data/borders_adjacency_matrix.csv",sep = ";", row.names = 1, header = TRUE))
+migration <- as.matrix(read.table("./data/migration_adjacency_matrix.csv", sep = ";", row.names = 1, header = TRUE))
 
 
 formula <- migration ~ 
@@ -273,20 +273,20 @@ gof <- GERGM::GOF(model, return_GERGM_Object = TRUE)
 
 ```
 
-```{r Print GERGM model 1}
+```{r Print GERGM model 1, echo = FALSE}
 # Generate Trace Plot
 GERGM::Trace_Plot(model)
 ```
 
 
-```{r}
+```{r, echo = FALSE, , message = FALSE}
 # Generate GOF Plot
 GERGM::GOF(model)
 ```
 
 
 
-```{r Significance of GERGM model 1}
+```{r Significance of GERGM model 1, echo = FALSE}
 # Check for significance
 (EstSE <- rbind(t(attributes(model)$theta.coef), t(attributes(model)$lambda.coef)))
 EstSE_df = as.data.frame(EstSE)
@@ -344,76 +344,76 @@ Our contribution has been to examine the topic of international migration from t
 
 # Appendix
 
-*List of countries included in the analysis*
+**List of countries included in the analysis**
 
-```{r}
+```{r, echo = FALSE}
 knitr::kable(rownames(migration))
 ```
 
-*Sources of data*
+**Sources of data**
 
-```{r}
-data_sources <- read.table("data_sources.csv", sep = ",", row.names = 1, header = TRUE)
+```{r, echo = FALSE}
+data_sources <- read.table("./data/data_sources.csv", sep = ",", row.names = 1, header = TRUE)
 knitr::kable(data_sources)
 ```
 
 
 *Second GERGM with log-trasformed edge weights, population and GDP*
 
-```{r GERGM model 2}
-covariates_logged <- data.frame(covariates)
-covariates_logged$Population <- log(covariates_logged$Population)
-covariates_logged$GDP <- log(covariates_logged$GDP)
-migration_logged <- log(migration)
-migration_logged[migration_logged == -Inf] <- 0.01
-migration_logged[migration_logged == 0] <- 0.01
-
-formula_logged <- migration_logged ~
-                        edges +
-                        sender("Population") +
-                        receiver("Population") +
-                        sender("Population_Density") +
-                        receiver("Population_Density") +
-                        sender("GDP") +
-                        receiver("GDP") +
-                        sender("Crime_Index") +
-                        receiver("Crime_Index") +
-                        sender("Freedom_2020") +
-                        receiver("Freedom_2020") +
-                        sender("Unemployment_2020") +
-                        receiver("Unemployment_2020") +
-                        nodematch("Language") +
-                        netcov(borders) +
-                        in2stars(alpha = 0.8) +
-                        out2stars(alpha = 0.8) +
-                        mutual(alpha = 0.8)
-
-model_logged <- GERGM::gergm(formula_logged,
-                      covariate_data = covariates_logged,
-                      number_of_networks_to_simulate = 500000,
-                      thin = 1/100,
-                      proposal_variance = 0.05,
-                      MCMC_burnin = 10000,
-                      transformation_type = "LogCauchy",
-                      seed = 456,
-                      convergence_tolerance = 0.1)
-
-gof_logged <- GERGM::GOF(model_logged, return_GERGM_Object = TRUE)
+```{r GERGM model 2, echo = FALSE}
+# covariates_logged <- data.frame(covariates)
+# covariates_logged$Population <- log(covariates_logged$Population)
+# covariates_logged$GDP <- log(covariates_logged$GDP)
+# migration_logged <- log(migration)
+# migration_logged[migration_logged == -Inf] <- 0.01
+# migration_logged[migration_logged == 0] <- 0.01
+# 
+# formula_logged <- migration_logged ~
+#                         edges +
+#                         sender("Population") +
+#                         receiver("Population") +
+#                         sender("Population_Density") +
+#                         receiver("Population_Density") +
+#                         sender("GDP") +
+#                         receiver("GDP") +
+#                         sender("Crime_Index") +
+#                         receiver("Crime_Index") +
+#                         sender("Freedom_2020") +
+#                         receiver("Freedom_2020") +
+#                         sender("Unemployment_2020") +
+#                         receiver("Unemployment_2020") +
+#                         nodematch("Language") +
+#                         netcov(borders) +
+#                         in2stars(alpha = 0.8) +
+#                         out2stars(alpha = 0.8) +
+#                         mutual(alpha = 0.8)
+# 
+# model_logged <- GERGM::gergm(formula_logged,
+#                       covariate_data = covariates_logged,
+#                       number_of_networks_to_simulate = 500000,
+#                       thin = 1/100,
+#                       proposal_variance = 0.05,
+#                       MCMC_burnin = 10000,
+#                       transformation_type = "LogCauchy",
+#                       seed = 456,
+#                       convergence_tolerance = 0.1)
+# 
+# gof_logged <- GERGM::GOF(model_logged, return_GERGM_Object = TRUE)
 
 ```
 
-```{r Print GERGM model 2}
+```{r Print GERGM model 2, echo = FALSE}
 # Generate Trace Plot
 # GERGM::Trace_Plot(model_logged)
 ```
 
 
-```{r}
+```{r, echo = FALSE}
 # Generate GOF Plot
 # GERGM::GOF(model_logged)
 ```
 
-```{r Significance of GERGM model 2}
+```{r Significance of GERGM model 2, echo = FALSE}
 # (EstSE_log <- rbind(t(attributes(model_logged)$theta.coef), t(attributes(model_logged)$lambda.coef)))
 # 
 # EstSE_df_log = as.data.frame(EstSE_log)
@@ -429,3 +429,4 @@ gof_logged <- GERGM::GOF(model_logged, return_GERGM_Object = TRUE)
 # knitr::kable(EstSE_df)
 ```
 
+(Model 2 not included due to issues with knitting it in papaya, please refer to the .Rmd file)
